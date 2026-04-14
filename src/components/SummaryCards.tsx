@@ -17,7 +17,6 @@ export default function SummaryCards({ snapshot, rate, symbol }: Props) {
   if (!snapshot) return null;
 
   const cards = [
-    { label: 'Net Worth', value: snapshot.totalUsd * rate, color: '#6366f1' },
     { label: 'Fiat', value: snapshot.fiatUsd * rate, color: '#22c55e' },
     { label: 'Digital', value: snapshot.digitalUsd * rate, color: '#f59e0b' },
     { label: 'Stock', value: snapshot.stockUsd * rate, color: '#3b82f6' },

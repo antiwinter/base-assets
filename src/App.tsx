@@ -31,7 +31,18 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
-        <h2>Portfolio Dashboard</h2>
+        <div className="header-left">
+          <span className="header-label">Net Worth</span>
+          <span className="header-value">
+            {latest ? (() => {
+              const v = latest.totalUsd * rate;
+              const abs = Math.abs(v);
+              if (abs >= 1_000_000) return `${symbol}${(v / 1_000_000).toFixed(2)}M`;
+              if (abs >= 1_000) return `${symbol}${(v / 1_000).toFixed(1)}K`;
+              return `${symbol}${v.toFixed(2)}`;
+            })() : '--'}
+          </span>
+        </div>
         <div className="currency-switch">
           {(['USD', 'CNY'] as Currency[]).map((c) => (
             <button

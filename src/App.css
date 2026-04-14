@@ -24,9 +24,22 @@ body {
   margin-bottom: 20px;
 }
 
-.header h2 {
+.header-left {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.header-label {
   font-size: 20px;
   font-weight: 600;
+  color: #1e293b;
+}
+
+.header-value {
+  font-size: 15px;
+  font-weight: 500;
+  color: #94a3b8;
 }
 
 .reload-btn {
@@ -79,7 +92,7 @@ body {
 /* Summary Cards */
 .summary-cards {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   margin-bottom: 20px;
 }
