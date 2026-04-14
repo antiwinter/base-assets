@@ -3,6 +3,8 @@ import type { Snapshot } from '../types';
 
 interface Props {
   snapshot: Snapshot | undefined;
+  rate: number;
+  symbol: string;
 }
 
 const COLORS = [
@@ -11,12 +13,12 @@ const COLORS = [
   '#a855f7', '#0ea5e9', '#84cc16',
 ];
 
-export default function AllocationChart({ snapshot }: Props) {
+export default function AllocationChart({ snapshot, rate, symbol }: Props) {
   if (!snapshot) return null;
 
   const data = snapshot.accounts
     .filter((a) => a.valueUsd > 0)
-    .map((a) => ({ name: `${a.account} (${a.unit})`, value: Math.round(a.valueUsd * 100) / 100 }))
+    .map((a) => ({ name: `${a.platform}${a.account ? '/' + a.account : ''} (${a.unit})`, value: Math.round(a.valueUsd * rate * 100) / 100 }))
     .sort((a, b) => b.value - a.value);
 
   if (data.length === 0) return <div className="chart-empty">No positive assets</div>;
@@ -41,7 +43,7 @@ export default function AllocationChart({ snapshot }: Props) {
               <Cell key={i} fill={COLORS[i % COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip formatter={(v: number) => `$${v.toLocaleString()}`} />
+          <Tooltip formatter={(v: number) => `${symbol}${v.toLocaleString()}`} />
           <Legend />
         </PieChart>
       </ResponsiveContainer>

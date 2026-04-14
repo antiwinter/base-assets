@@ -6,6 +6,8 @@ import type { Snapshot } from '../types';
 
 interface Props {
   snapshots: Snapshot[];
+  rate: number;
+  symbol: string;
 }
 
 function fmtDate(ts: number): string {
@@ -13,14 +15,15 @@ function fmtDate(ts: number): string {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
-export default function TrendChart({ snapshots }: Props) {
+export default function TrendChart({ snapshots, rate, symbol }: Props) {
   if (snapshots.length === 0) return null;
 
   const data = snapshots.map((s) => ({
     date: fmtDate(s.date),
-    fiat: Math.round(s.fiatUsd),
-    digital: Math.round(s.digitalUsd),
-    debt: Math.round(Math.abs(s.debtUsd)),
+    fiat: Math.round(s.fiatUsd * rate),
+    digital: Math.round(s.digitalUsd * rate),
+    stock: Math.round(s.stockUsd * rate),
+    debt: Math.round(Math.abs(s.debtUsd) * rate),
   }));
 
   return (
@@ -30,8 +33,8 @@ export default function TrendChart({ snapshots }: Props) {
         <ComposedChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
           <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-          <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} />
-          <Tooltip formatter={(v: number) => `$${v.toLocaleString()}`} />
+          <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${symbol}${(v / 1000).toFixed(0)}K`} />
+          <Tooltip formatter={(v: number) => `${symbol}${v.toLocaleString()}`} />
           <Legend />
           <Area
             type="monotone"
@@ -50,6 +53,15 @@ export default function TrendChart({ snapshots }: Props) {
             fill="#f59e0b"
             fillOpacity={0.4}
             stroke="#f59e0b"
+          />
+          <Area
+            type="monotone"
+            dataKey="stock"
+            name="Stock"
+            stackId="1"
+            fill="#3b82f6"
+            fillOpacity={0.4}
+            stroke="#3b82f6"
           />
           <Line
             type="monotone"

@@ -44,10 +44,42 @@ body {
   background: #f1f5f9;
 }
 
+/* Currency Switch */
+.currency-switch {
+  display: flex;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.currency-btn {
+  padding: 6px 14px;
+  border: none;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+  transition: background 0.15s, color 0.15s;
+}
+
+.currency-btn + .currency-btn {
+  border-left: 1px solid #cbd5e1;
+}
+
+.currency-btn.active {
+  background: #6366f1;
+  color: #fff;
+}
+
+.currency-btn:not(.active):hover {
+  background: #f1f5f9;
+}
+
 /* Summary Cards */
 .summary-cards {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 12px;
   margin-bottom: 20px;
 }

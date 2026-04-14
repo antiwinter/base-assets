@@ -2,17 +2,19 @@ import type { Snapshot } from '../types';
 
 interface Props {
   snapshots: Snapshot[];
+  rate: number;
+  symbol: string;
 }
 
 function fmtDate(ts: number): string {
   return new Date(ts).toLocaleDateString();
 }
 
-function fmtUsd(v: number): string {
-  return `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+function fmtVal(v: number, sym: string): string {
+  return `${sym}${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-export default function DetailTable({ snapshots }: Props) {
+export default function DetailTable({ snapshots, rate, symbol }: Props) {
   if (snapshots.length === 0) return null;
 
   const rows = [...snapshots].reverse();
@@ -27,6 +29,7 @@ export default function DetailTable({ snapshots }: Props) {
             <th>Net Worth</th>
             <th>Fiat</th>
             <th>Digital</th>
+            <th>Stock</th>
             <th>Debt</th>
           </tr>
         </thead>
@@ -34,10 +37,11 @@ export default function DetailTable({ snapshots }: Props) {
           {rows.map((s) => (
             <tr key={s.date}>
               <td>{fmtDate(s.date)}</td>
-              <td>{fmtUsd(s.totalUsd)}</td>
-              <td>{fmtUsd(s.fiatUsd)}</td>
-              <td>{fmtUsd(s.digitalUsd)}</td>
-              <td className="debt-cell">{fmtUsd(s.debtUsd)}</td>
+              <td>{fmtVal(s.totalUsd * rate, symbol)}</td>
+              <td>{fmtVal(s.fiatUsd * rate, symbol)}</td>
+              <td>{fmtVal(s.digitalUsd * rate, symbol)}</td>
+              <td>{fmtVal(s.stockUsd * rate, symbol)}</td>
+              <td className="debt-cell">{fmtVal(s.debtUsd * rate, symbol)}</td>
             </tr>
           ))}
         </tbody>
