@@ -1,6 +1,6 @@
 import {
   ComposedChart, Area, Line, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, CartesianGrid, Legend,
+  ResponsiveContainer, ReferenceLine, Legend,
 } from 'recharts';
 import { CAT_COLORS } from '../types';
 import type { Snapshot } from '../types';
@@ -11,7 +11,7 @@ interface Props {
   symbol: string;
 }
 
-function fmtDate(ts: number): string {
+function fmtAxisDate(ts: number): string {
   const d = new Date(ts);
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
@@ -20,7 +20,7 @@ export default function TrendChart({ snapshots, rate, symbol }: Props) {
   if (snapshots.length === 0) return null;
 
   const data = snapshots.map((s) => ({
-    date: fmtDate(s.date),
+    ts: s.date,
     fiat: Math.round(s.fiatUsd * rate),
     digital: Math.round(s.digitalUsd * rate),
     stock: Math.round(s.stockUsd * rate),
@@ -31,19 +31,40 @@ export default function TrendChart({ snapshots, rate, symbol }: Props) {
     <div className="chart-container">
       <ResponsiveContainer width="100%" height={320}>
         <ComposedChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-          <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-          <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${symbol}${(v / 1000).toFixed(0)}k`} />
-          <Tooltip formatter={(v: number) => `${symbol}${v.toLocaleString()}`} />
-          <Legend />
-          <Area
-            type="monotone"
-            dataKey="fiat"
-            name="Fiat"
-            stackId="1"
-            fill={CAT_COLORS.Fiat}
-            stroke={CAT_COLORS.Fiat}
+          {data.map((d) => (
+            <ReferenceLine
+              key={d.ts}
+              x={d.ts}
+              stroke="#e2e8f0"
+              strokeDasharray="3 3"
+            />
+          ))}
+          <XAxis
+            dataKey="ts"
+            type="number"
+            scale="time"
+            domain={['dataMin', 'dataMax']}
+            tickFormatter={fmtAxisDate}
+            tick={{ fontSize: 12 }}
           />
+          <YAxis
+            tick={{ fontSize: 12 }}
+            tickFormatter={(v) => `${symbol}${(v / 1_000_000).toFixed(1)}m`}
+          />
+          <Tooltip
+            labelFormatter={(ts: number) => fmtAxisDate(ts)}
+            formatter={(v: number) => {
+              const abs = Math.abs(v);
+              if (abs >= 1_000_000) return `${symbol}${(v / 1_000_000).toFixed(2)}m`;
+              if (abs >= 1_000) return `${symbol}${(v / 1_000).toFixed(1)}k`;
+              return `${symbol}${v.toFixed(0)}`;
+            }}
+            itemSorter={(item: any) => {
+              const order: Record<string, number> = { Fiat: 0, Stock: 1, Digital: 2, Debt: 3 };
+              return order[item.name] ?? 4;
+            }}
+          />
+          <Legend />
           <Area
             type="monotone"
             dataKey="digital"
@@ -51,6 +72,7 @@ export default function TrendChart({ snapshots, rate, symbol }: Props) {
             stackId="1"
             fill={CAT_COLORS.Digital}
             stroke={CAT_COLORS.Digital}
+            fillOpacity={1}
           />
           <Area
             type="monotone"
@@ -59,6 +81,16 @@ export default function TrendChart({ snapshots, rate, symbol }: Props) {
             stackId="1"
             fill={CAT_COLORS.Stock}
             stroke={CAT_COLORS.Stock}
+            fillOpacity={1}
+          />
+          <Area
+            type="monotone"
+            dataKey="fiat"
+            name="Fiat"
+            stackId="1"
+            fill={CAT_COLORS.Fiat}
+            stroke={CAT_COLORS.Fiat}
+            fillOpacity={1}
           />
           <Line
             type="monotone"
