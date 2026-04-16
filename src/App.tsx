@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { usePortfolioData } from './hooks/usePortfolioData';
-import SummaryCards from './components/SummaryCards';
-import AllocationChart from './components/AllocationChart';
+import TreemapChart from './components/TreemapChart';
 import TrendChart from './components/TrendChart';
 import DetailTable from './components/DetailTable';
 
@@ -66,10 +65,7 @@ export default function App() {
           ))}
         </div>
       </header>
-      <div className="top-row">
-        <SummaryCards snapshot={latest} prevSnapshot={prev} rate={rate} symbol={symbol} />
-        <AllocationChart snapshot={latest} rate={rate} symbol={symbol} />
-      </div>
+      <TreemapChart snapshot={latest} prevSnapshot={prev} rate={rate} symbol={symbol} />
       <h2 className="section-title">Worth Trend</h2>
       <TrendChart snapshots={snapshots} rate={rate} symbol={symbol} />
       <h2 className="section-title">Snapshot History</h2>

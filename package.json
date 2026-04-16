@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@lark-base-open/js-sdk": "^0.3.8",
+    "@nivo/core": "^0.99.0",
+    "@nivo/treemap": "^0.99.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "recharts": "^2.15.3"

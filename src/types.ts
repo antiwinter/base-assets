@@ -17,6 +17,7 @@ export interface SnapshotAccount {
   balance: number;
   unit: string;
   valueUsd: number;
+  category: 'fiat' | 'digital' | 'stock' | 'debt';
 }
 
 export interface Snapshot {

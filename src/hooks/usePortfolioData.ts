@@ -56,18 +56,23 @@ function buildSnapshots(
       const acct = r.account.toLowerCase();
       const platformType = platformTypeMap.get(r.platform)?.toLowerCase() ?? '';
 
+      let category: 'fiat' | 'digital' | 'stock' | 'debt';
       if (acct === 'debt') {
         debtUsd += valueUsd;
+        category = 'debt';
       } else if (acct === 'stock') {
         stockUsd += valueUsd;
+        category = 'stock';
       } else if (platformType === 'ex') {
         digitalUsd += valueUsd;
+        category = 'digital';
       } else {
         // no account set → fiat balance
         fiatUsd += valueUsd;
+        category = 'fiat';
       }
 
-      return { platform: r.platform, account: r.account, balance: r.balance, unit: r.unit, valueUsd };
+      return { platform: r.platform, account: r.account, balance: r.balance, unit: r.unit, valueUsd, category };
     });
 
     snapshots.push({ date, accounts, totalUsd, fiatUsd, digitalUsd, stockUsd, debtUsd });
