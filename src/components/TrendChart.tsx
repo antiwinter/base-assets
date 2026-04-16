@@ -103,7 +103,7 @@ export default function TrendChart({ snapshots, rate, symbol, selectedIndex, onS
             <ReferenceLine
               key={d.ts}
               x={d.ts}
-              stroke={d.ts === selectedTs ? '#334155' : '#e2e8f0'}
+              stroke={d.ts === selectedTs ? '#f88' : '#e2e8f0'}
               strokeDasharray={d.ts === selectedTs ? undefined : '3 3'}
               strokeWidth={d.ts === selectedTs ? 2 : 1}
             />

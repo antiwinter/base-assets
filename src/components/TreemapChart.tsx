@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
 import { CAT_COLORS } from '../types';
 import type { Snapshot } from '../types';
@@ -8,6 +8,11 @@ interface Props {
   prevSnapshot: Snapshot | undefined;
   rate: number;
   symbol: string;
+}
+
+interface CatLabelInfo {
+  x: number; y: number; width: number; height: number;
+  name: string; value: number; change: string | null; color: string; sym: string;
 }
 
 function fmtHuman(v: number): string {
@@ -93,13 +98,12 @@ function buildTreeData(snapshot: Snapshot, prevSnapshot: Snapshot | undefined, r
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function CustomContent(props: any) {
-  const { x, y, width, height, depth, name, root, sym, zoomed, onCategoryClick } = props;
+  const { x, y, width, height, depth, name, root, sym, zoomed, onCategoryClick, catLabelsRef } = props;
   if (!width || !height || width < 2 || height < 2) return null;
 
   const color = root?.color ?? props.color ?? '#94a3b8';
 
   if (zoomed) {
-    // Zoomed-in: all blocks are peers (depth 1 = platform level)
     if (depth !== 1) return null;
     const showName = width > 30 && height > 16;
     const showValue = width > 50 && height > 30;
@@ -130,14 +134,16 @@ function CustomContent(props: any) {
   }
 
   if (depth === 1) {
-    // Category level — solid fill, thick white stroke, centered name/value/change
-    const change = props.change ?? null;
-    const catTotal = props.value ?? 0;
-    const cx = x + width / 2;
-    const cy = y + height / 2;
-    const showName = width > 40 && height > 20;
-    const showValue = width > 60 && height > 36;
-    const showChange = change && typeof change === 'string' && width > 60 && height > 50;
+    // Category level — render rect only, store position for depth-2 overlay
+    if (catLabelsRef) {
+      catLabelsRef.current.set(name, {
+        x, y, width, height, name,
+        value: props.value ?? 0,
+        change: props.change ?? null,
+        color,
+        sym,
+      });
+    }
 
     return (
       <g style={{ cursor: 'pointer' }} onClick={() => onCategoryClick?.(name)}>
@@ -148,30 +154,21 @@ function CustomContent(props: any) {
           height={height}
           style={{ fill: color, stroke: '#fff', strokeWidth: 3 }}
         />
-        {showName && (
-          <text x={cx} y={cy - (showValue ? 6 : 4)} textAnchor="middle" fontSize={20} fontWeight={700} fill="#444" style={{ pointerEvents: 'none' }}>
-            {name}
-          </text>
-        )}
-        {showValue && (
-          <text x={cx} y={cy + 14} textAnchor="middle" fontSize={16} fill="#444" style={{ pointerEvents: 'none' }}>
-            {sym}{fmtHuman(catTotal)}
-          </text>
-        )}
-        {showChange && (
-          <text x={cx} y={cy + 30} textAnchor="middle" fontSize={12} fill="#444" style={{ pointerEvents: 'none' }}>
-            {change}
-          </text>
-        )}
       </g>
     );
   }
 
-  // depth === 2: Platform level — transparent fill, thin white stroke
+  // depth === 2: Platform level
   const category = props.category ?? root?.name ?? '';
+  const catInfo = catLabelsRef?.current.get(category);
   const showName = width > 30 && height > 16;
   const showValue = width > 50 && height > 30;
   const size = props.size ?? props.value ?? 0;
+
+  // Category label conditions (rendered here at depth 2 so it paints on top of depth-1 rects)
+  const showCatName = catInfo && catInfo.width > 40 && catInfo.height > 20;
+  const showCatValue = catInfo && catInfo.width > 60 && catInfo.height > 36;
+  const showCatChange = catInfo && catInfo.change && catInfo.width > 60 && catInfo.height > 50;
 
   return (
     <g style={{ cursor: 'pointer' }} onClick={() => onCategoryClick?.(category)}>
@@ -191,6 +188,37 @@ function CustomContent(props: any) {
         <text x={x + 8} y={y + 36} fontSize={12} fill="#fff" style={{ pointerEvents: 'none' }}>
           {sym}
           {fmtHuman(size)}
+        </text>
+      )}
+      {/* Category label — rendered at every depth-2 node so the last sibling's copy is on top */}
+      {showCatName && (
+        <text
+          x={catInfo.x + catInfo.width / 2}
+          y={catInfo.y + catInfo.height / 2 - (showCatValue ? 6 : 4)}
+          textAnchor="middle" fontSize={20} fontWeight={700} fill="#444"
+          style={{ pointerEvents: 'none' }}
+        >
+          {catInfo.name}
+        </text>
+      )}
+      {showCatValue && (
+        <text
+          x={catInfo.x + catInfo.width / 2}
+          y={catInfo.y + catInfo.height / 2 + 14}
+          textAnchor="middle" fontSize={16} fill="#444"
+          style={{ pointerEvents: 'none' }}
+        >
+          {catInfo.sym}{fmtHuman(catInfo.value)}
+        </text>
+      )}
+      {showCatChange && (
+        <text
+          x={catInfo.x + catInfo.width / 2}
+          y={catInfo.y + catInfo.height / 2 + 30}
+          textAnchor="middle" fontSize={12} fill="#444"
+          style={{ pointerEvents: 'none' }}
+        >
+          {catInfo.change}
         </text>
       )}
     </g>
@@ -225,6 +253,7 @@ function CustomTooltip({ active, payload, sym }: any) {
 
 export default function TreemapChart({ snapshot, prevSnapshot, rate, symbol }: Props) {
   const [zoomedCat, setZoomedCat] = useState<string | null>(null);
+  const catLabelsRef = useRef<Map<string, CatLabelInfo>>(new Map());
 
   if (!snapshot) return null;
 
@@ -237,6 +266,9 @@ export default function TreemapChart({ snapshot, prevSnapshot, rate, symbol }: P
   const displayData = catNode
     ? catNode.children.map((c) => ({ ...c, color: catNode.color }))
     : data;
+
+  // Clear label positions before each render
+  catLabelsRef.current.clear();
 
   const handleCategoryClick = (catName: string) => {
     if (!zoomed) setZoomedCat(catName);
@@ -265,9 +297,8 @@ export default function TreemapChart({ snapshot, prevSnapshot, rate, symbol }: P
           data={displayData}
           dataKey="size"
           aspectRatio={4 / 3}
-          isAnimationActive={true}
-          animationDuration={300}
-          content={<CustomContent sym={symbol} zoomed={zoomed} onCategoryClick={handleCategoryClick} />}
+          isAnimationActive={false}
+          content={<CustomContent sym={symbol} zoomed={zoomed} onCategoryClick={handleCategoryClick} catLabelsRef={catLabelsRef} />}
         >
           <Tooltip content={<CustomTooltip sym={symbol} />} />
         </Treemap>
