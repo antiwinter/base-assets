@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
-import { CAT_COLORS } from '../types';
+import { CAT_COLORS, fmtHuman } from '../types';
 import type { Snapshot } from '../types';
 
 interface Props {
@@ -16,13 +16,6 @@ interface Props {
 interface CatLabelInfo {
   x: number; y: number; width: number; height: number;
   name: string; value: number; change: string | null; color: string; sym: string;
-}
-
-function fmtHuman(v: number): string {
-  const abs = Math.abs(v);
-  if (abs >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}m`;
-  if (abs >= 1_000) return `${(v / 1_000).toFixed(1)}k`;
-  return v.toFixed(0);
 }
 
 function changeLabel(cur: number, prev: number): string | null {

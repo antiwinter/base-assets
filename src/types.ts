@@ -36,3 +36,17 @@ export interface Snapshot {
   stockUsd: number;
   debtUsd: number;
 }
+
+/** Format a number with 3 significant digits + k/m suffix */
+export function fmtHuman(v: number): string {
+  const abs = Math.abs(v);
+  if (abs >= 1_000_000) {
+    const n = v / 1_000_000;
+    return `${abs >= 100_000_000 ? n.toFixed(0) : abs >= 10_000_000 ? n.toFixed(1) : n.toFixed(2)}m`;
+  }
+  if (abs >= 1_000) {
+    const n = v / 1_000;
+    return `${abs >= 100_000 ? n.toFixed(0) : abs >= 10_000 ? n.toFixed(1) : n.toFixed(2)}k`;
+  }
+  return v.toFixed(0);
+}

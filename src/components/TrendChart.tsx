@@ -2,7 +2,7 @@ import {
   ComposedChart, Area, Line, XAxis, YAxis, Tooltip,
   ResponsiveContainer, ReferenceLine, Legend,
 } from 'recharts';
-import { CAT_COLORS } from '../types';
+import { CAT_COLORS, fmtHuman } from '../types';
 import type { Snapshot } from '../types';
 
 interface Props {
@@ -119,16 +119,11 @@ export default function TrendChart({ snapshots, rate, symbol, selectedIndex, onS
           />
           <YAxis
             tick={{ fontSize: 12 }}
-            tickFormatter={(v) => `${symbol}${(v / 1_000_000).toFixed(1)}m`}
+            tickFormatter={(v) => `${symbol}${fmtHuman(v)}`}
           />
           <Tooltip
             labelFormatter={(ts: number) => fmtAxisDate(ts)}
-            formatter={(v: number) => {
-              const abs = Math.abs(v);
-              if (abs >= 1_000_000) return `${symbol}${(v / 1_000_000).toFixed(2)}m`;
-              if (abs >= 1_000) return `${symbol}${(v / 1_000).toFixed(1)}k`;
-              return `${symbol}${v.toFixed(0)}`;
-            }}
+            formatter={(v: number) => `${symbol}${fmtHuman(v)}`}
             itemSorter={(item: any) => {
               const order: Record<string, number> = { Fiat: 0, Stock: 1, Digital: 2, Debt: 3 };
               return order[item.name] ?? 4;

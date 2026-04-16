@@ -1,4 +1,5 @@
 import type { Snapshot } from '../types';
+import { fmtHuman } from '../types';
 
 interface Props {
   snapshots: Snapshot[];
@@ -16,13 +17,13 @@ function fmtDate(ts: number): string {
   return `${yy}-${mm}-${dd}`;
 }
 
-function fmtHuman(v: number, sym: string): { symbol: string; number: string } {
-  const abs = Math.abs(v);
-  let number: string;
-  if (abs >= 1_000_000) number = `${(v / 1_000_000).toFixed(2)}m`;
-  else if (abs >= 1_000) number = `${(v / 1_000).toFixed(1)}k`;
-  else number = v.toFixed(2);
-  return { symbol: sym, number };
+function fmtHumanSplit(v: number, sym: string): { symbol: string; number: string } {
+  return { symbol: sym, number: fmtHuman(v) };
+}
+
+function fmtHumanPlain(v: number): string {
+  const sign = v < 0 ? '-' : '';
+  return `${sign}${fmtHuman(Math.abs(v))}`;
 }
 
 function timesChange(cur: number, prev: number): { arrow: string; label: string; positive: boolean } | null {
@@ -36,16 +37,8 @@ function timesChange(cur: number, prev: number): { arrow: string; label: string;
   return { arrow: positive ? '↑' : '↓', label: `${Math.abs(pct).toFixed(0)}%`, positive };
 }
 
-function fmtHumanPlain(v: number): string {
-  const abs = Math.abs(v);
-  const sign = v < 0 ? '-' : '';
-  if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(2)}m`;
-  if (abs >= 1_000) return `${sign}${(abs / 1_000).toFixed(1)}k`;
-  return `${sign}${abs.toFixed(0)}`;
-}
-
 function ValCell({ value, prev, sym, className }: { value: number; prev?: number; sym: string; className?: string }) {
-  const h = fmtHuman(value, sym);
+  const h = fmtHumanSplit(value, sym);
   const change = prev !== undefined ? timesChange(value, prev) : null;
   return (
     <td className={className}>
@@ -62,7 +55,7 @@ function ValCell({ value, prev, sym, className }: { value: number; prev?: number
 function DebtCell({ value, prev, sym }: { value: number; prev?: number; sym: string }) {
   const absVal = Math.abs(value);
   const absPrev = prev !== undefined ? Math.abs(prev) : undefined;
-  const h = fmtHuman(absVal, sym);
+  const h = fmtHumanSplit(absVal, sym);
   const change = absPrev !== undefined && absPrev !== 0
     ? (() => {
         const ratio = absVal / absPrev;
