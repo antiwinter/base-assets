@@ -13,7 +13,25 @@ interface Props {
 
 function fmtAxisDate(ts: number): string {
   const d = new Date(ts);
-  return `${d.getMonth() + 1}/${d.getDate()}`;
+  const yy = String(d.getFullYear()).slice(2);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${yy}/${mm}`;
+}
+
+function getMonthlyTicks(data: { ts: number }[]): number[] {
+  if (data.length === 0) return [];
+  const min = data[0].ts;
+  const max = data[data.length - 1].ts;
+  const ticks: number[] = [];
+  const d = new Date(min);
+  d.setDate(1);
+  d.setHours(0, 0, 0, 0);
+  if (d.getTime() < min) d.setMonth(d.getMonth() + 1);
+  while (d.getTime() <= max) {
+    ticks.push(d.getTime());
+    d.setMonth(d.getMonth() + 1);
+  }
+  return ticks;
 }
 
 export default function TrendChart({ snapshots, rate, symbol }: Props) {
@@ -26,6 +44,8 @@ export default function TrendChart({ snapshots, rate, symbol }: Props) {
     stock: Math.round(s.stockUsd * rate),
     debt: Math.round(Math.abs(s.debtUsd) * rate),
   }));
+
+  const monthlyTicks = getMonthlyTicks(data);
 
   return (
     <div className="chart-container">
@@ -44,6 +64,7 @@ export default function TrendChart({ snapshots, rate, symbol }: Props) {
             type="number"
             scale="time"
             domain={['dataMin', 'dataMax']}
+            ticks={monthlyTicks}
             tickFormatter={fmtAxisDate}
             tick={{ fontSize: 12 }}
           />
