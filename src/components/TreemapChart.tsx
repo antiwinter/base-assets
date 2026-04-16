@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
 import { CAT_COLORS } from '../types';
 import type { Snapshot } from '../types';
@@ -92,10 +93,41 @@ function buildTreeData(snapshot: Snapshot, prevSnapshot: Snapshot | undefined, r
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function CustomContent(props: any) {
-  const { x, y, width, height, depth, name, root, sym } = props;
+  const { x, y, width, height, depth, name, root, sym, zoomed, onCategoryClick } = props;
   if (!width || !height || width < 2 || height < 2) return null;
 
   const color = root?.color ?? props.color ?? '#94a3b8';
+
+  if (zoomed) {
+    // Zoomed-in: all blocks are peers (depth 1 = platform level)
+    if (depth !== 1) return null;
+    const showName = width > 30 && height > 16;
+    const showValue = width > 50 && height > 30;
+    const size = props.value ?? 0;
+
+    return (
+      <g>
+        <rect
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          style={{ fill: color, stroke: '#fff', strokeWidth: 2 }}
+        />
+        {showName && (
+          <text x={x + 8} y={y + 20} fontSize={14} fontWeight={500} fill="#fff">
+            {name}
+          </text>
+        )}
+        {showValue && (
+          <text x={x + 8} y={y + 36} fontSize={12} fill="#fff">
+            {sym}
+            {fmtHuman(size)}
+          </text>
+        )}
+      </g>
+    );
+  }
 
   if (depth === 1) {
     // Category level — solid fill, thick white stroke, centered name/value/change
@@ -108,7 +140,7 @@ function CustomContent(props: any) {
     const showChange = change && typeof change === 'string' && width > 60 && height > 50;
 
     return (
-      <g>
+      <g style={{ cursor: 'pointer' }} onClick={() => onCategoryClick?.(name)}>
         <rect
           x={x}
           y={y}
@@ -117,17 +149,17 @@ function CustomContent(props: any) {
           style={{ fill: color, stroke: '#fff', strokeWidth: 3 }}
         />
         {showName && (
-          <text x={cx} y={cy - (showValue ? 6 : 4)} textAnchor="middle" fontSize={20} fontWeight={700} fill="#444">
+          <text x={cx} y={cy - (showValue ? 6 : 4)} textAnchor="middle" fontSize={20} fontWeight={700} fill="#444" style={{ pointerEvents: 'none' }}>
             {name}
           </text>
         )}
         {showValue && (
-          <text x={cx} y={cy + 14} textAnchor="middle" fontSize={16} fill="#444">
+          <text x={cx} y={cy + 14} textAnchor="middle" fontSize={16} fill="#444" style={{ pointerEvents: 'none' }}>
             {sym}{fmtHuman(catTotal)}
           </text>
         )}
         {showChange && (
-          <text x={cx} y={cy + 30} textAnchor="middle" fontSize={12} fill="#444">
+          <text x={cx} y={cy + 30} textAnchor="middle" fontSize={12} fill="#444" style={{ pointerEvents: 'none' }}>
             {change}
           </text>
         )}
@@ -136,12 +168,13 @@ function CustomContent(props: any) {
   }
 
   // depth === 2: Platform level — transparent fill, thin white stroke
+  const category = props.category ?? root?.name ?? '';
   const showName = width > 30 && height > 16;
   const showValue = width > 50 && height > 30;
   const size = props.size ?? props.value ?? 0;
 
   return (
-    <g>
+    <g style={{ cursor: 'pointer' }} onClick={() => onCategoryClick?.(category)}>
       <rect
         x={x}
         y={y}
@@ -150,12 +183,12 @@ function CustomContent(props: any) {
         style={{ fill: 'transparent', stroke: '#fff', strokeWidth: 1 }}
       />
       {showName && (
-        <text x={x + 8} y={y + 20} fontSize={14} fontWeight={500} fill="#fff">
+        <text x={x + 8} y={y + 20} fontSize={14} fontWeight={500} fill="#fff" style={{ pointerEvents: 'none' }}>
           {name}
         </text>
       )}
       {showValue && (
-        <text x={x + 8} y={y + 36} fontSize={12} fill="#fff">
+        <text x={x + 8} y={y + 36} fontSize={12} fill="#fff" style={{ pointerEvents: 'none' }}>
           {sym}
           {fmtHuman(size)}
         </text>
@@ -191,20 +224,50 @@ function CustomTooltip({ active, payload, sym }: any) {
 }
 
 export default function TreemapChart({ snapshot, prevSnapshot, rate, symbol }: Props) {
+  const [zoomedCat, setZoomedCat] = useState<string | null>(null);
+
   if (!snapshot) return null;
 
   const data = buildTreeData(snapshot, prevSnapshot, rate);
   if (data.length === 0) return <div className="chart-empty">No assets</div>;
 
+  // When zoomed, show only that category's children as top-level data
+  const zoomed = zoomedCat !== null;
+  const catNode = zoomed ? data.find((d) => d.name === zoomedCat) : null;
+  const displayData = catNode
+    ? catNode.children.map((c) => ({ ...c, color: catNode.color }))
+    : data;
+
+  const handleCategoryClick = (catName: string) => {
+    if (!zoomed) setZoomedCat(catName);
+  };
+
   return (
     <div className="chart-container treemap-container">
+      {zoomed && (
+        <a
+          href="#"
+          onClick={(e) => { e.preventDefault(); setZoomedCat(null); }}
+          style={{
+            display: 'inline-block',
+            marginBottom: 6,
+            fontSize: 13,
+            color: '#64748b',
+            textDecoration: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          ← back
+        </a>
+      )}
       <ResponsiveContainer width="100%" height={320}>
         <Treemap
-          data={data}
+          data={displayData}
           dataKey="size"
           aspectRatio={4 / 3}
-          isAnimationActive={false}
-          content={<CustomContent sym={symbol} />}
+          isAnimationActive={true}
+          animationDuration={300}
+          content={<CustomContent sym={symbol} zoomed={zoomed} onCategoryClick={handleCategoryClick} />}
         >
           <Tooltip content={<CustomTooltip sym={symbol} />} />
         </Treemap>
