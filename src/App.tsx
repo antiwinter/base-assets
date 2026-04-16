@@ -9,6 +9,14 @@ export type Currency = 'USD' | 'CNY';
 export default function App() {
   const { snapshots, cnyRate, loading, error, reload } = usePortfolioData();
   const [currency, setCurrency] = useState<Currency>('CNY');
+  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
+
+  // Resolve selected index: -1 means latest
+  const resolvedIndex = selectedIndex < 0 || selectedIndex >= snapshots.length
+    ? snapshots.length - 1
+    : selectedIndex;
+  const selected = snapshots.length > 0 ? snapshots[resolvedIndex] : undefined;
+  const prevSelected = resolvedIndex > 0 ? snapshots[resolvedIndex - 1] : undefined;
   const latest = snapshots.length > 0 ? snapshots[snapshots.length - 1] : undefined;
   const prev = snapshots.length > 1 ? snapshots[snapshots.length - 2] : undefined;
 
@@ -34,14 +42,14 @@ export default function App() {
         <div className="header-left">
           <span className="header-label">Net Worth</span>
           <span className="header-value">
-            {latest ? (() => {
-              const v = latest.totalUsd * rate;
+            {selected ? (() => {
+              const v = selected.totalUsd * rate;
               const abs = Math.abs(v);
               let num: string;
               if (abs >= 1_000_000) num = `${(v / 1_000_000).toFixed(2)}m`;
               else if (abs >= 1_000) num = `${(v / 1_000).toFixed(1)}k`;
               else num = v.toFixed(2);
-              const change = prev ? ((latest.totalUsd - prev.totalUsd) / Math.abs(prev.totalUsd)) * 100 : null;
+              const change = prevSelected ? ((selected.totalUsd - prevSelected.totalUsd) / Math.abs(prevSelected.totalUsd)) * 100 : null;
               return <>
                 <span className="sym-dim">{symbol}</span>{num}
                 {change !== null && (
@@ -65,11 +73,23 @@ export default function App() {
           ))}
         </div>
       </header>
-      <TreemapChart snapshot={latest} prevSnapshot={prev} rate={rate} symbol={symbol} />
+      <TreemapChart snapshot={selected} prevSnapshot={prevSelected} rate={rate} symbol={symbol} />
       <h2 className="section-title">Worth Trend</h2>
-      <TrendChart snapshots={snapshots} rate={rate} symbol={symbol} />
+      <TrendChart
+        snapshots={snapshots}
+        rate={rate}
+        symbol={symbol}
+        selectedIndex={resolvedIndex}
+        onSelectIndex={setSelectedIndex}
+      />
       <h2 className="section-title">Snapshot History</h2>
-      <DetailTable snapshots={snapshots} rate={rate} symbol={symbol} />
+      <DetailTable
+        snapshots={snapshots}
+        rate={rate}
+        symbol={symbol}
+        selectedIndex={resolvedIndex}
+        onSelectIndex={setSelectedIndex}
+      />
     </div>
   );
 }

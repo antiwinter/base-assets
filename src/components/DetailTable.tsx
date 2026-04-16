@@ -4,6 +4,8 @@ interface Props {
   snapshots: Snapshot[];
   rate: number;
   symbol: string;
+  selectedIndex: number;
+  onSelectIndex: (i: number) => void;
 }
 
 function fmtDate(ts: number): string {
@@ -91,7 +93,7 @@ function DebtCell({ value, prev, sym }: { value: number; prev?: number; sym: str
   );
 }
 
-export default function DetailTable({ snapshots, rate, symbol }: Props) {
+export default function DetailTable({ snapshots, rate, symbol, selectedIndex, onSelectIndex }: Props) {
   if (snapshots.length === 0) return null;
 
   const rows = [...snapshots].reverse();
@@ -112,12 +114,22 @@ export default function DetailTable({ snapshots, rate, symbol }: Props) {
         </thead>
         <tbody>
           {rows.map((s, i) => {
+            const origIndex = snapshots.length - 1 - i;
             const prev = i < rows.length - 1 ? rows[i + 1] : undefined;
+            const isSelected = origIndex === selectedIndex;
             const velocity = prev
               ? ((s.totalUsd - prev.totalUsd) * rate) / ((s.date - prev.date) / 86_400_000)
               : undefined;
             return (
-              <tr key={s.date}>
+              <tr
+                key={s.date}
+                onClick={() => onSelectIndex(origIndex)}
+                style={{
+                  cursor: 'pointer',
+                  background: isSelected ? '#f1f5f9' : undefined,
+                  fontWeight: isSelected ? 500 : undefined,
+                }}
+              >
                 <td className="date-cell">{fmtDate(s.date)}</td>
                 <ValCell value={s.totalUsd * rate} prev={prev ? prev.totalUsd * rate : undefined} sym={symbol} />
                 <td className={`velocity-cell ${velocity !== undefined ? (velocity >= 0 ? 'change-up' : 'change-down') : ''}`}>
