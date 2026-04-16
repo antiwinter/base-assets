@@ -91,10 +91,10 @@ body {
 
 /* Summary Cards */
 .summary-cards {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 12px;
-  margin-bottom: 20px;
+  flex-shrink: 0;
 }
 
 .card {
@@ -117,19 +117,21 @@ body {
   font-weight: 700;
 }
 
-/* Charts */
-.charts-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+/* Top Row */
+.top-row {
+  display: flex;
   gap: 16px;
   margin-bottom: 20px;
 }
 
+/* Charts */
 .chart-container {
   background: #fff;
   border-radius: 8px;
   padding: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  flex: 1;
+  margin-bottom: 20px;
 }
 
 .chart-container h3 {
@@ -190,6 +192,42 @@ body {
   color: #ef4444;
 }
 
+/* Date cell */
+.date-cell {
+  font-family: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+/* Section Titles */
+.section-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 12px;
+}
+
+/* Dimmed currency symbol */
+.sym-dim {
+  opacity: 0.4;
+}
+
+/* Change badge */
+.change-badge {
+  font-size: 11px;
+  font-weight: 500;
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
+.change-up {
+  color: #22c55e;
+}
+
+.change-down {
+  color: #ef4444;
+}
+
 /* States */
 .loading {
   display: flex;
@@ -218,15 +256,12 @@ body {
 
 /* Responsive */
 @media (max-width: 700px) {
+  .top-row {
+    flex-direction: column;
+  }
+
   .summary-cards {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .charts-row {
-    grid-template-columns: 1fr;
-  }
-
-  .card-value {
-    font-size: 18px;
+    flex-direction: row;
+    flex-wrap: wrap;
   }
 }

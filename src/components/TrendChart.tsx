@@ -28,12 +28,11 @@ export default function TrendChart({ snapshots, rate, symbol }: Props) {
 
   return (
     <div className="chart-container">
-      <h3>Worth Trend</h3>
       <ResponsiveContainer width="100%" height={320}>
         <ComposedChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
           <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-          <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${symbol}${(v / 1000).toFixed(0)}K`} />
+          <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${symbol}${(v / 1000).toFixed(0)}k`} />
           <Tooltip formatter={(v: number) => `${symbol}${v.toLocaleString()}`} />
           <Legend />
           <Area

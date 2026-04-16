@@ -11,6 +11,7 @@ export default function App() {
   const { snapshots, cnyRate, loading, error, reload } = usePortfolioData();
   const [currency, setCurrency] = useState<Currency>('CNY');
   const latest = snapshots.length > 0 ? snapshots[snapshots.length - 1] : undefined;
+  const prev = snapshots.length > 1 ? snapshots[snapshots.length - 2] : undefined;
 
   const rate = currency === 'CNY' ? cnyRate : 1;
   const symbol = currency === 'CNY' ? '¥' : '$';
@@ -37,9 +38,19 @@ export default function App() {
             {latest ? (() => {
               const v = latest.totalUsd * rate;
               const abs = Math.abs(v);
-              if (abs >= 1_000_000) return `${symbol}${(v / 1_000_000).toFixed(2)}M`;
-              if (abs >= 1_000) return `${symbol}${(v / 1_000).toFixed(1)}K`;
-              return `${symbol}${v.toFixed(2)}`;
+              let num: string;
+              if (abs >= 1_000_000) num = `${(v / 1_000_000).toFixed(2)}m`;
+              else if (abs >= 1_000) num = `${(v / 1_000).toFixed(1)}k`;
+              else num = v.toFixed(2);
+              const change = prev ? ((latest.totalUsd - prev.totalUsd) / Math.abs(prev.totalUsd)) * 100 : null;
+              return <>
+                <span className="sym-dim">{symbol}</span>{num}
+                {change !== null && (
+                  <span className={`change-badge ${change >= 0 ? 'change-up' : 'change-down'}`}>
+                    {change >= 0 ? '↑' : '↓'}{Math.abs(change).toFixed(1)}%
+                  </span>
+                )}
+              </>;
             })() : '--'}
           </span>
         </div>
@@ -55,11 +66,13 @@ export default function App() {
           ))}
         </div>
       </header>
-      <SummaryCards snapshot={latest} rate={rate} symbol={symbol} />
-      <div className="charts-row">
+      <div className="top-row">
+        <SummaryCards snapshot={latest} prevSnapshot={prev} rate={rate} symbol={symbol} />
         <AllocationChart snapshot={latest} rate={rate} symbol={symbol} />
-        <TrendChart snapshots={snapshots} rate={rate} symbol={symbol} />
       </div>
+      <h2 className="section-title">Worth Trend</h2>
+      <TrendChart snapshots={snapshots} rate={rate} symbol={symbol} />
+      <h2 className="section-title">Snapshot History</h2>
       <DetailTable snapshots={snapshots} rate={rate} symbol={symbol} />
     </div>
   );
