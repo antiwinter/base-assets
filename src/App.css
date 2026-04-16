@@ -161,7 +161,7 @@ body {
 }
 
 .debt-cell {
-  color: #ef4444;
+  color: #ff6262;
 }
 
 /* Date cell */
@@ -203,11 +203,11 @@ body {
 }
 
 .change-up {
-  color: #22c55e;
+  color: #8dc77b;
 }
 
 .change-down {
-  color: #ef4444;
+  color: #ff6262;
 }
 
 /* States */
@@ -223,7 +223,7 @@ body {
 .error {
   text-align: center;
   padding: 40px;
-  color: #ef4444;
+  color: #ff6262;
 }
 
 .error button {

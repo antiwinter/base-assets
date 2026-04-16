@@ -2,6 +2,7 @@ import {
   ComposedChart, Area, Line, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, Legend,
 } from 'recharts';
+import { CAT_COLORS } from '../types';
 import type { Snapshot } from '../types';
 
 interface Props {
@@ -40,33 +41,30 @@ export default function TrendChart({ snapshots, rate, symbol }: Props) {
             dataKey="fiat"
             name="Fiat"
             stackId="1"
-            fill="#22c55e"
-            fillOpacity={0.4}
-            stroke="#22c55e"
+            fill={CAT_COLORS.Fiat}
+            stroke={CAT_COLORS.Fiat}
           />
           <Area
             type="monotone"
             dataKey="digital"
             name="Digital"
             stackId="1"
-            fill="#f59e0b"
-            fillOpacity={0.4}
-            stroke="#f59e0b"
+            fill={CAT_COLORS.Digital}
+            stroke={CAT_COLORS.Digital}
           />
           <Area
             type="monotone"
             dataKey="stock"
             name="Stock"
             stackId="1"
-            fill="#3b82f6"
-            fillOpacity={0.4}
-            stroke="#3b82f6"
+            fill={CAT_COLORS.Stock}
+            stroke={CAT_COLORS.Stock}
           />
           <Line
             type="monotone"
             dataKey="debt"
             name="Debt"
-            stroke="#ef4444"
+            stroke={CAT_COLORS.Debt}
             strokeWidth={2}
             dot={false}
           />

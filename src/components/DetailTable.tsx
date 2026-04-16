@@ -103,7 +103,7 @@ export default function DetailTable({ snapshots, rate, symbol }: Props) {
           <tr>
             <th>Date</th>
             <th>Net Worth</th>
-            <th>Velocity <span class="velocity-unit">/d</span></th>
+            <th>Velocity <span className="velocity-unit">/d</span></th>
             <th>Fiat</th>
             <th>Digital</th>
             <th>Stock</th>

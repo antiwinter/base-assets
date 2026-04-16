@@ -31,10 +31,10 @@ export default function SummaryCards({ snapshot, prevSnapshot, rate, symbol }: P
   if (!snapshot) return null;
 
   const cards = [
-    { label: 'Fiat', value: snapshot.fiatUsd * rate, prev: prevSnapshot ? prevSnapshot.fiatUsd * rate : undefined, color: '#22c55e' },
-    { label: 'Stock', value: snapshot.stockUsd * rate, prev: prevSnapshot ? prevSnapshot.stockUsd * rate : undefined, color: '#3b82f6' },
-    { label: 'Digital', value: snapshot.digitalUsd * rate, prev: prevSnapshot ? prevSnapshot.digitalUsd * rate : undefined, color: '#f59e0b' },
-    { label: 'Debt', value: snapshot.debtUsd * rate, prev: prevSnapshot ? prevSnapshot.debtUsd * rate : undefined, color: '#ef4444' },
+    { label: 'Fiat', value: snapshot.fiatUsd * rate, prev: prevSnapshot ? prevSnapshot.fiatUsd * rate : undefined, color: '#82ca9d' },
+    { label: 'Stock', value: snapshot.stockUsd * rate, prev: prevSnapshot ? prevSnapshot.stockUsd * rate : undefined, color: '#8884d8' },
+    { label: 'Digital', value: snapshot.digitalUsd * rate, prev: prevSnapshot ? prevSnapshot.digitalUsd * rate : undefined, color: '#ffc658' },
+    { label: 'Debt', value: snapshot.debtUsd * rate, prev: prevSnapshot ? prevSnapshot.debtUsd * rate : undefined, color: '#c0392b' },
   ];
 
   return (

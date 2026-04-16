@@ -1,3 +1,10 @@
+export const CAT_COLORS: Record<string, string> = {
+  Fiat: '#8dc77b',
+  Stock: '#9698e5',
+  Digital: '#f8c12d',
+  Debt: '#ff6262',
+};
+
 export interface DataRecord {
   date: number; // timestamp ms
   platform: string;
