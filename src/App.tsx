@@ -39,28 +39,6 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
-        <div className="header-left">
-          <span className="header-label">Net Worth</span>
-          <span className="header-value">
-            {selected ? (() => {
-              const v = selected.totalUsd * rate;
-              const abs = Math.abs(v);
-              let num: string;
-              if (abs >= 1_000_000) num = `${(v / 1_000_000).toFixed(2)}m`;
-              else if (abs >= 1_000) num = `${(v / 1_000).toFixed(1)}k`;
-              else num = v.toFixed(2);
-              const change = prevSelected ? ((selected.totalUsd - prevSelected.totalUsd) / Math.abs(prevSelected.totalUsd)) * 100 : null;
-              return <>
-                <span className="sym-dim">{symbol}</span>{num}
-                {change !== null && (
-                  <span className={`change-badge ${change >= 0 ? 'change-up' : 'change-down'}`}>
-                    {change >= 0 ? '↑' : '↓'}{Math.abs(change).toFixed(1)}%
-                  </span>
-                )}
-              </>;
-            })() : '--'}
-          </span>
-        </div>
         <div className="currency-switch">
           {(['USD', 'CNY'] as Currency[]).map((c) => (
             <button
@@ -73,8 +51,17 @@ export default function App() {
           ))}
         </div>
       </header>
-      <TreemapChart snapshot={selected} prevSnapshot={prevSelected} rate={rate} symbol={symbol} />
-      <h2 className="section-title">Worth Trend</h2>
+      <h2 className="section-title">Portfolio</h2>
+      <TreemapChart
+        snapshot={selected}
+        prevSnapshot={prevSelected}
+        rate={rate}
+        symbol={symbol}
+        date={selected?.date}
+        netWorth={selected ? selected.totalUsd * rate : undefined}
+        prevNetWorth={prevSelected ? prevSelected.totalUsd * rate : undefined}
+      />
+      <h2 className="section-title">Trend</h2>
       <TrendChart
         snapshots={snapshots}
         rate={rate}
@@ -82,7 +69,7 @@ export default function App() {
         selectedIndex={resolvedIndex}
         onSelectIndex={setSelectedIndex}
       />
-      <h2 className="section-title">Snapshot History</h2>
+      <h2 className="section-title">Snapshots</h2>
       <DetailTable
         snapshots={snapshots}
         rate={rate}

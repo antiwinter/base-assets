@@ -8,6 +8,9 @@ interface Props {
   prevSnapshot: Snapshot | undefined;
   rate: number;
   symbol: string;
+  date?: number;
+  netWorth?: number;
+  prevNetWorth?: number;
 }
 
 interface CatLabelInfo {
@@ -251,7 +254,15 @@ function CustomTooltip({ active, payload, sym }: any) {
   );
 }
 
-export default function TreemapChart({ snapshot, prevSnapshot, rate, symbol }: Props) {
+function fmtDate(ts: number): string {
+  const d = new Date(ts);
+  const yy = String(d.getFullYear()).slice(2);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yy}/${mm}/${dd}`;
+}
+
+export default function TreemapChart({ snapshot, prevSnapshot, rate, symbol, date, netWorth, prevNetWorth }: Props) {
   const [zoomedCat, setZoomedCat] = useState<string | null>(null);
   const catLabelsRef = useRef<Map<string, CatLabelInfo>>(new Map());
 
@@ -274,24 +285,43 @@ export default function TreemapChart({ snapshot, prevSnapshot, rate, symbol }: P
     if (!zoomed) setZoomedCat(catName);
   };
 
+  // Net worth header
+  const nwStr = netWorth !== undefined ? `${symbol}${fmtHuman(netWorth)}` : '';
+  const changeStr = (netWorth !== undefined && prevNetWorth !== undefined && prevNetWorth !== 0)
+    ? (() => {
+        const pct = ((netWorth - prevNetWorth) / Math.abs(prevNetWorth)) * 100;
+        const arrow = pct >= 0 ? '↑' : '↓';
+        return `${arrow}${Math.abs(pct).toFixed(1)}%`;
+      })()
+    : null;
+  const dateStr = date ? fmtDate(date) : '';
+
   return (
     <div className="chart-container treemap-container">
-      {zoomed && (
-        <a
-          href="#"
-          onClick={(e) => { e.preventDefault(); setZoomedCat(null); }}
-          style={{
-            display: 'inline-block',
-            marginBottom: 6,
-            fontSize: 13,
-            color: '#64748b',
-            textDecoration: 'none',
-            cursor: 'pointer',
-          }}
-        >
-          ← back
-        </a>
-      )}
+      <div style={{ display: 'flex', alignItems: 'baseline', marginBottom: 10 }}>
+        <span style={{ fontSize: 15, color: '#1e293b' }}>{dateStr}</span>
+        <span style={{ fontSize: 15, color: '#94a3b8', marginLeft: 6 }}>
+          <span style={{ opacity: 0.4 }}>{symbol}</span>{netWorth !== undefined ? fmtHuman(netWorth) : '--'}
+        </span>
+        {changeStr && (
+          <span
+            className={changeStr.startsWith('↑') ? 'change-up' : 'change-down'}
+            style={{ fontSize: 13, marginLeft: 6, fontWeight: 500 }}
+          >
+            {changeStr}
+          </span>
+        )}
+        <span style={{ flex: 1 }} />
+        {zoomed && (
+          <a
+            href="#"
+            onClick={(e) => { e.preventDefault(); setZoomedCat(null); }}
+            style={{ fontSize: 13, color: '#64748b', textDecoration: 'none', cursor: 'pointer' }}
+          >
+            ← back
+          </a>
+        )}
+      </div>
       <ResponsiveContainer width="100%" height={320}>
         <Treemap
           data={displayData}
