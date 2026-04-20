@@ -4,12 +4,20 @@ import TreemapChart from './components/TreemapChart';
 import TrendChart from './components/TrendChart';
 import DetailTable from './components/DetailTable';
 
+type Page = 'snapshot' | 'cashflow';
+
+const NAV_ITEMS: { key: Page; label: string }[] = [
+  { key: 'snapshot', label: 'Snapshot' },
+  { key: 'cashflow', label: 'Cash Flow' },
+];
+
 export type Currency = 'USD' | 'CNY';
 
 export default function App() {
   const { snapshots, cnyRate, loading, error, reload } = usePortfolioData();
   const [currency, setCurrency] = useState<Currency>('CNY');
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
+  const [page, setPage] = useState<Page>('snapshot');
 
   // Resolve selected index: -1 means latest
   const resolvedIndex = selectedIndex < 0 || selectedIndex >= snapshots.length
@@ -37,46 +45,66 @@ export default function App() {
   }
 
   return (
-    <div className="app">
-      <header className="header">
-        <div className="currency-switch">
-          {(['USD', 'CNY'] as Currency[]).map((c) => (
-            <button
-              key={c}
-              className={`currency-btn ${currency === c ? 'active' : ''}`}
-              onClick={() => setCurrency(c)}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
-      </header>
-      <h2 className="section-title">Portfolio</h2>
-      <TreemapChart
-        snapshot={selected}
-        prevSnapshot={prevSelected}
-        rate={rate}
-        symbol={symbol}
-        date={selected?.date}
-        netWorth={selected ? selected.totalUsd * rate : undefined}
-        prevNetWorth={prevSelected ? prevSelected.totalUsd * rate : undefined}
-      />
-      <h2 className="section-title">Trend</h2>
-      <TrendChart
-        snapshots={snapshots}
-        rate={rate}
-        symbol={symbol}
-        selectedIndex={resolvedIndex}
-        onSelectIndex={setSelectedIndex}
-      />
-      <h2 className="section-title">Snapshots</h2>
-      <DetailTable
-        snapshots={snapshots}
-        rate={rate}
-        symbol={symbol}
-        selectedIndex={resolvedIndex}
-        onSelectIndex={setSelectedIndex}
-      />
+    <div className="layout">
+      <nav className="nav-panel">
+        {NAV_ITEMS.map((item) => (
+          <button
+            key={item.key}
+            className={`nav-item ${page === item.key ? 'active' : ''}`}
+            onClick={() => setPage(item.key)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </nav>
+      <div className="app">
+        <header className="header">
+          <div className="currency-switch">
+            {(['USD', 'CNY'] as Currency[]).map((c) => (
+              <button
+                key={c}
+                className={`currency-btn ${currency === c ? 'active' : ''}`}
+                onClick={() => setCurrency(c)}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        </header>
+        {page === 'snapshot' && (
+          <>
+            <h2 className="section-title">Portfolio</h2>
+            <TreemapChart
+              snapshot={selected}
+              prevSnapshot={prevSelected}
+              rate={rate}
+              symbol={symbol}
+              date={selected?.date}
+              netWorth={selected ? selected.totalUsd * rate : undefined}
+              prevNetWorth={prevSelected ? prevSelected.totalUsd * rate : undefined}
+            />
+            <h2 className="section-title">Trend</h2>
+            <TrendChart
+              snapshots={snapshots}
+              rate={rate}
+              symbol={symbol}
+              selectedIndex={resolvedIndex}
+              onSelectIndex={setSelectedIndex}
+            />
+            <h2 className="section-title">Snapshots</h2>
+            <DetailTable
+              snapshots={snapshots}
+              rate={rate}
+              symbol={symbol}
+              selectedIndex={resolvedIndex}
+              onSelectIndex={setSelectedIndex}
+            />
+          </>
+        )}
+        {page === 'cashflow' && (
+          <div className="placeholder">Cash Flow – coming soon</div>
+        )}
+      </div>
     </div>
   );
 }
