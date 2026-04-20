@@ -14,7 +14,7 @@ body {
 /* Layout */
 .layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
 }
 
 .nav-panel {
@@ -26,6 +26,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  overflow-y: auto;
 }
 
 .nav-item {
@@ -53,12 +54,21 @@ body {
   font-weight: 600;
 }
 
+.nav-spacer {
+  flex: 1;
+}
+
+.nav-panel .currency-switch {
+  margin: 0 16px;
+}
+
 .app {
   flex: 1;
   min-width: 0;
   max-width: 960px;
   margin: 0 auto;
   padding: 20px 16px;
+  overflow-y: auto;
 }
 
 .placeholder {

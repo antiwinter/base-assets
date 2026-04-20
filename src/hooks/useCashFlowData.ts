@@ -47,7 +47,7 @@ const VALID_DRIVERS = new Set<string>(['EPI', 'Salary', 'Monthly', 'Yearly']);
 
 export function useCashFlowData() {
   const [items, setItems] = useState<CashFlowItem[]>([]);
-  const [cnyRate, setCnyRate] = useState(1);
+  const [prices, setPrices] = useState<Map<string, number>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -102,16 +102,15 @@ export function useCashFlowData() {
       }
       setItems(parsed);
 
-      // Fetch CNY rate from prices table
+      // Fetch prices table → symbol→priceUsd map
       const priceRecords = await fetchAllRecords(priceTable);
+      const priceMap = new Map<string, number>();
       for (const rec of priceRecords) {
         const sym = parseSelect(rec.fields[symbolFieldId]);
-        if (sym === 'CNY') {
-          const p = rec.fields[priceFieldId];
-          if (typeof p === 'number') setCnyRate(p);
-          break;
-        }
+        const p = rec.fields[priceFieldId];
+        if (sym && typeof p === 'number') priceMap.set(sym, p);
       }
+      setPrices(priceMap);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -123,5 +122,5 @@ export function useCashFlowData() {
     load();
   }, [load]);
 
-  return { items, cnyRate, loading, error, reload: load };
+  return { items, prices, loading, error, reload: load };
 }

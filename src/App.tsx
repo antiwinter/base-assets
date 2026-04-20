@@ -17,7 +17,7 @@ export type Currency = 'USD' | 'CNY';
 
 export default function App() {
   const { snapshots, cnyRate, loading, error, reload } = usePortfolioData();
-  const { items: cfItems, cnyRate: cfCnyRate, loading: cfLoading, error: cfError } = useCashFlowData();
+  const { items: cfItems, prices: cfPrices, loading: cfLoading, error: cfError } = useCashFlowData();
   const [currency, setCurrency] = useState<Currency>('CNY');
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const [page, setPage] = useState<Page>('snapshot');
@@ -62,21 +62,20 @@ export default function App() {
             {item.label}
           </button>
         ))}
+        <div className="nav-spacer" />
+        <div className="currency-switch">
+          {(['USD', 'CNY'] as Currency[]).map((c) => (
+            <button
+              key={c}
+              className={`currency-btn ${currency === c ? 'active' : ''}`}
+              onClick={() => setCurrency(c)}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
       </nav>
       <div className="app">
-        <header className="header">
-          <div className="currency-switch">
-            {(['USD', 'CNY'] as Currency[]).map((c) => (
-              <button
-                key={c}
-                className={`currency-btn ${currency === c ? 'active' : ''}`}
-                onClick={() => setCurrency(c)}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-        </header>
         {page === 'snapshot' && (
           <>
             <h2 className="section-title">Portfolio</h2>
@@ -114,7 +113,7 @@ export default function App() {
               items={cfItems}
               rate={rate}
               symbol={symbol}
-              cnyRate={cfCnyRate}
+              prices={cfPrices}
             />
           </>
         )}

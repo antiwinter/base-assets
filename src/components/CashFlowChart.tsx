@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, Legend, ReferenceLine, Cell,
+  ResponsiveContainer, Legend, ReferenceLine, Cell, LabelList,
 } from 'recharts';
 import { fmtHuman } from '../types';
 import type { CashFlowItem } from '../types';
@@ -11,7 +11,7 @@ interface Props {
   items: CashFlowItem[];
   rate: number;   // currency conversion rate (1 for USD, cnyRate for CNY)
   symbol: string; // '¥' or '$'
-  cnyRate: number;
+  prices: Map<string, number>; // symbol → USD price (e.g. CNY→0.15, USD→1)
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -26,15 +26,23 @@ interface MonthData {
   details: { name: string; value: number }[];
 }
 
-export default function CashFlowChart({ items, rate, symbol, cnyRate }: Props) {
+export default function CashFlowChart({ items, rate, symbol, prices }: Props) {
   const year = new Date().getFullYear();
+  const cnyPriceUsd = prices.get('CNY') || 0.15;
 
   const data = useMemo(() => {
-    const drivers = items.map((item) => ({
-      driver: createDriver(item),
-      // Items in USD need conversion when displaying in CNY
-      convRate: item.unit === 'USD' ? (rate / cnyRate) : (rate === 1 ? cnyRate : 1),
-    }));
+    const displayingCny = rate !== 1;
+    const drivers = items.map((item) => {
+      // Look up item's unit price in USD; no unit → CNY
+      const unitPriceUsd = item.unit ? (prices.get(item.unit) ?? 1) : cnyPriceUsd;
+      // Conversion: item's native value → display currency
+      // displayCNY: value × (unitPriceUsd / cnyPriceUsd)
+      // displayUSD: value × unitPriceUsd
+      const convRate = displayingCny
+        ? unitPriceUsd / cnyPriceUsd
+        : unitPriceUsd;
+      return { driver: createDriver(item), convRate };
+    });
 
     let cumulative = 0;
     const result: MonthData[] = [];
@@ -65,7 +73,7 @@ export default function CashFlowChart({ items, rate, symbol, cnyRate }: Props) {
       });
     }
     return result;
-  }, [items, rate, symbol, cnyRate, year]);
+  }, [items, rate, symbol, prices, cnyPriceUsd, year]);
 
   if (items.length === 0) {
     return <div className="chart-empty">No cash flow items</div>;
@@ -117,7 +125,30 @@ export default function CashFlowChart({ items, rate, symbol, cnyRate }: Props) {
             }}
           />
           <Legend />
-          <Bar dataKey="income" name="Income" fill="#8dc77b" radius={[3, 3, 0, 0]} />
+          <Bar dataKey="income" name="Income" fill="#8dc77b" radius={[3, 3, 0, 0]}>
+            <LabelList
+              dataKey="net"
+              position="top"
+              formatter={(v: number) => `${v >= 0 ? '+' : ''}${fmtHuman(v)}`}
+              style={{ fontSize: 11, fontWeight: 600 }}
+              fill="" // overridden per-entry below
+              content={({ x, y, width, value }: any) => {
+                const v = value as number;
+                return (
+                  <text
+                    x={x + width / 2}
+                    y={y - 6}
+                    textAnchor="middle"
+                    fontSize={11}
+                    fontWeight={600}
+                    fill={v >= 0 ? '#8dc77b' : '#ff6262'}
+                  >
+                    {v >= 0 ? '+' : ''}{fmtHuman(v)}
+                  </text>
+                );
+              }}
+            />
+          </Bar>
           <Bar dataKey="expense" name="Expense" radius={[0, 0, 3, 3]}>
             {data.map((_, i) => (
               <Cell key={i} fill="#ff6262" />
