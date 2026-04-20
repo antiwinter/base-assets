@@ -5,6 +5,7 @@ import TreemapChart from './components/TreemapChart';
 import TrendChart from './components/TrendChart';
 import DetailTable from './components/DetailTable';
 import CashFlowChart from './components/CashFlowChart';
+import YearlyCashFlowChart from './components/YearlyCashFlowChart';
 
 type Page = 'snapshot' | 'cashflow';
 
@@ -21,6 +22,7 @@ export default function App() {
   const [currency, setCurrency] = useState<Currency>('CNY');
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const [page, setPage] = useState<Page>('snapshot');
+  const [cfYear, setCfYear] = useState<number>(new Date().getFullYear());
 
   // Resolve selected index: -1 means latest
   const resolvedIndex = selectedIndex < 0 || selectedIndex >= snapshots.length
@@ -114,6 +116,15 @@ export default function App() {
               rate={rate}
               symbol={symbol}
               prices={cfPrices}
+              year={cfYear}
+            />
+            <YearlyCashFlowChart
+              items={cfItems}
+              rate={rate}
+              symbol={symbol}
+              prices={cfPrices}
+              selectedYear={cfYear}
+              onSelectYear={setCfYear}
             />
           </>
         )}

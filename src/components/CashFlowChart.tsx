@@ -12,6 +12,7 @@ interface Props {
   rate: number;   // currency conversion rate (1 for USD, cnyRate for CNY)
   symbol: string; // '¥' or '$'
   prices: Map<string, number>; // symbol → USD price (e.g. CNY→0.15, USD→1)
+  year: number;
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -26,8 +27,7 @@ interface MonthData {
   details: { name: string; value: number }[];
 }
 
-export default function CashFlowChart({ items, rate, symbol, prices }: Props) {
-  const year = new Date().getFullYear();
+export default function CashFlowChart({ items, rate, symbol, prices, year }: Props) {
   const cnyPriceUsd = prices.get('CNY') || 0.15;
 
   const data = useMemo(() => {
