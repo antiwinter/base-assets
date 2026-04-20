@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { usePortfolioData } from './hooks/usePortfolioData';
+import { useCashFlowData } from './hooks/useCashFlowData';
 import TreemapChart from './components/TreemapChart';
 import TrendChart from './components/TrendChart';
 import DetailTable from './components/DetailTable';
+import CashFlowChart from './components/CashFlowChart';
 
 type Page = 'snapshot' | 'cashflow';
 
@@ -15,6 +17,7 @@ export type Currency = 'USD' | 'CNY';
 
 export default function App() {
   const { snapshots, cnyRate, loading, error, reload } = usePortfolioData();
+  const { items: cfItems, cnyRate: cfCnyRate, loading: cfLoading, error: cfError } = useCashFlowData();
   const [currency, setCurrency] = useState<Currency>('CNY');
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const [page, setPage] = useState<Page>('snapshot');
@@ -31,14 +34,17 @@ export default function App() {
   const rate = currency === 'CNY' ? cnyRate : 1;
   const symbol = currency === 'CNY' ? '¥' : '$';
 
-  if (loading) {
+  const isLoading = loading || cfLoading;
+  const anyError = error || cfError;
+
+  if (isLoading) {
     return <div className="loading">Loading portfolio data…</div>;
   }
 
-  if (error) {
+  if (anyError) {
     return (
       <div className="error">
-        <p>Error: {error}</p>
+        <p>Error: {anyError}</p>
         <button onClick={reload}>Retry</button>
       </div>
     );
@@ -102,7 +108,15 @@ export default function App() {
           </>
         )}
         {page === 'cashflow' && (
-          <div className="placeholder">Cash Flow – coming soon</div>
+          <>
+            <h2 className="section-title">Cash Flow</h2>
+            <CashFlowChart
+              items={cfItems}
+              rate={rate}
+              symbol={symbol}
+              cnyRate={cfCnyRate}
+            />
+          </>
         )}
       </div>
     </div>

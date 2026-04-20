@@ -37,6 +37,19 @@ export interface Snapshot {
   debtUsd: number;
 }
 
+export type CashFlowDriverType = 'EPI' | 'Salary' | 'Monthly' | 'Yearly';
+
+export interface CashFlowItem {
+  item: string;
+  driver: CashFlowDriverType;
+  amount: number;
+  unit: string;        // e.g. "USD", "CNY" (empty → CNY)
+  rate: number;        // annual interest rate in percent (e.g. 2.87)
+  end: number | null;  // timestamp ms, null = no end
+  term: number;        // loan term in months (e.g. 360 for 30yr), 0 if N/A
+  accounts: string;
+}
+
 /** Format a number with 3 significant digits + k/m suffix */
 export function fmtHuman(v: number): string {
   const abs = Math.abs(v);
