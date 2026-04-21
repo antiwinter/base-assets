@@ -13,6 +13,7 @@ import {
   findTopmostPositiveKey,
   findBottommostNegativeKey,
 } from './cashflowChartShared';
+import { CashflowTooltipCard } from './cashflowTooltipShared';
 
 interface Props {
   items: CashFlowItem[];
@@ -103,7 +104,7 @@ export default function CashFlowChart({ items, rate, symbol, prices, year }: Pro
   }
 
   return (
-    <div className="chart-container">
+    <div className="chart-container monthly-chart-container">
       <h3>Monthly Cashflow — {year}</h3>
       <ResponsiveContainer width="100%" height={360}>
         <ComposedChart data={data} barGap={0}>
@@ -120,31 +121,24 @@ export default function CashFlowChart({ items, rate, symbol, prices, year }: Pro
               if (!active || !payload?.length) return null;
               const d = payload[0]?.payload as MonthData | undefined;
               if (!d) return null;
-              return (
-                <div style={{
-                  background: '#fff', border: '1px solid #e2e8f0',
-                  borderRadius: 6, padding: '8px 12px', fontSize: 12,
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                }}>
-                  <div style={{ fontWeight: 600, marginBottom: 4 }}>{label}</div>
-                  <div style={{ color: '#8dc77b' }}>Income: {symbol}{fmtHuman(d.income)}</div>
-                  <div style={{ color: '#ff6262' }}>Expense: {symbol}{fmtHuman(d.expense)}</div>
-                  <div style={{ color: '#334155', fontWeight: 500 }}>Net: {symbol}{fmtHuman(d.net)}</div>
-                  <div style={{ color: '#6366f1', fontWeight: 500 }}>
-                    Cumulative: {symbol}{fmtHuman(d.cumulative)}
-                  </div>
-                  {d.details.length > 0 && (
-                    <>
-                      <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '4px 0' }} />
-                      {d.details.map((det, i) => (
-                        <div key={i} style={{ color: det.value > 0 ? '#8dc77b' : '#ff6262' }}>
-                          {det.name}: {symbol}{fmtHuman(det.value)}
-                        </div>
-                      ))}
-                    </>
-                  )}
-                </div>
-              );
+              const incomeDetails = d.details
+                .filter(det => det.value > 0)
+                .sort((a, b) => b.value - a.value)
+                .map(det => ({ label: `  ${det.name}`, value: det.value }));
+              const expenseDetails = d.details
+                .filter(det => det.value < 0)
+                .sort((a, b) => a.value - b.value)
+                .map(det => ({ label: `  ${det.name}`, value: det.value }));
+
+              const rows = [
+                { label: 'Cumulative', value: d.cumulative, bold: true },
+                { label: 'Income', value: d.income, bold: true },
+                ...incomeDetails,
+                { label: 'Expense', value: d.expense, bold: true },
+                ...expenseDetails,
+              ].filter(r => r.value !== 0);
+
+              return <CashflowTooltipCard title={String(label)} symbol={symbol} rows={rows} />;
             }}
           />
           <Bar

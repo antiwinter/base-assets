@@ -13,6 +13,7 @@ import {
   findTopmostPositiveKey,
   findBottommostNegativeKey,
 } from './cashflowChartShared';
+import { CashflowTooltipCard } from './cashflowTooltipShared';
 
 interface Props {
   items: CashFlowItem[];
@@ -157,17 +158,7 @@ export default function YearlyCashFlowChart({ items, rate, symbol, prices, selec
                 { label: `  ${d.expenseTop3Name ?? 'Top3'}`, value: d.expenseTop3 },
                 { label: '  Others', value: d.expenseOthers },
               ].filter(r => r.value !== 0);
-              return (
-                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 6, padding: '8px 12px', fontSize: 12 }}>
-                  <div style={{ fontWeight: 700, marginBottom: 6, color: '#f1f5f9' }}>{d.year}</div>
-                  {rows.map((r, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 24, lineHeight: '1.6' }}>
-                      <span style={{ color: r.bold ? '#f1f5f9' : '#94a3b8', fontWeight: r.bold ? 700 : 400 }}>{r.label}</span>
-                      <span style={{ color: '#f1f5f9', fontWeight: r.bold ? 700 : 400 }}>{symbol}{fmtHuman(r.value)}</span>
-                    </div>
-                  ))}
-                </div>
-              );
+              return <CashflowTooltipCard title={String(d.year)} symbol={symbol} rows={rows} />;
             }}
           />
           <ReferenceArea
