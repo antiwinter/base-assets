@@ -107,7 +107,7 @@ export default function CashFlowChart({ items, rate, symbol, prices, year }: Pro
       <h3>Monthly Cashflow — {year}</h3>
       <ResponsiveContainer width="100%" height={360}>
         <ComposedChart data={data} barGap={0}>
-          <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+          <XAxis dataKey="month" tick={{ fontSize: 12 }} padding={{ left: 12, right: 4 }} />
           <YAxis
             tick={{ fontSize: 12 }}
             tickFormatter={(v) => `${symbol}${fmtHuman(v)}`}

@@ -1,8 +1,8 @@
 import type { CashFlowItem } from '../types';
 import { createDriver } from '../cf-drivers/driver';
 
-export const INCOME_COLORS = ['#63c77d', '#4fbf96', '#3db4ad', '#2f9fc2'];
-export const EXPENSE_COLORS = ['#7b4db8', '#9a5fb7', '#c98b74', '#f2c84b'];
+export const INCOME_COLORS = ['#00C853', '#00E676', '#00B0FF', '#00E5FF'];
+export const EXPENSE_COLORS = ['#D500F9', '#FF4081', '#FF6D00', '#FFD600'];
 
 interface ValueEntry {
   value: number;

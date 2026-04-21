@@ -105,11 +105,17 @@ export default function YearlyCashFlowChart({ items, rate, symbol, prices, selec
     <div className="chart-container">
       <h3>Yearly Cashflow — {startYear}–{startYear + YEAR_COUNT - 1}</h3>
       <ResponsiveContainer width="100%" height={260}>
-        <BarChart data={data} barGap={0} onClick={handleClick} style={{ cursor: 'pointer' }}>
+        <BarChart
+          data={data}
+          barGap={0}
+          onClick={handleClick}
+          style={{ cursor: 'pointer' }}
+        >
           <XAxis
             dataKey="year"
             tick={{ fontSize: 11 }}
             tickFormatter={(v) => String(v).slice(2)}
+            padding={{ left: 12, right: 4 }}
           />
           <YAxis
             tick={{ fontSize: 12 }}
@@ -119,12 +125,13 @@ export default function YearlyCashFlowChart({ items, rate, symbol, prices, selec
           <Tooltip
             formatter={(v: number, name: string) => [`${symbol}${fmtHuman(v)}`, name]}
             labelFormatter={(label: string) => String(label)}
+            cursor={{ fill: '#f36661', fillOpacity: 0.1 }}
           />
           <ReferenceArea
-            x1={selectedYear - 0.4}
-            x2={selectedYear + 0.4}
-            fill="#6366f1"
-            fillOpacity={0.08}
+            x1={selectedYear}
+            x2={selectedYear}
+            fill="#f36661"
+            fillOpacity={0.12}
             ifOverflow="visible"
           />
           <Bar
