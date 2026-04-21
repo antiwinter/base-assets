@@ -6,6 +6,7 @@ export const EXPENSE_COLORS = ['#D500F9', '#FF4081', '#FF6D00', '#FFD600'];
 
 interface ValueEntry {
   value: number;
+  name?: string;
 }
 
 export interface Top3Buckets {
@@ -13,6 +14,9 @@ export interface Top3Buckets {
   top2: number;
   top3: number;
   others: number;
+  top1Name?: string;
+  top2Name?: string;
+  top3Name?: string;
 }
 
 export interface DriverWithRate {
@@ -54,6 +58,9 @@ export function splitTop3(entries: ValueEntry[], byAbs: boolean): Top3Buckets {
     top2: sorted[1]?.value ?? 0,
     top3: sorted[2]?.value ?? 0,
     others: sorted.slice(3).reduce((sum, e) => sum + e.value, 0),
+    top1Name: sorted[0]?.name,
+    top2Name: sorted[1]?.name,
+    top3Name: sorted[2]?.name,
   };
 }
 
