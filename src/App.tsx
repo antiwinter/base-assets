@@ -11,7 +11,7 @@ type Page = 'snapshot' | 'cashflow';
 
 const NAV_ITEMS: { key: Page; label: string }[] = [
   { key: 'snapshot', label: 'Snapshot' },
-  { key: 'cashflow', label: 'Cash Flow' },
+  { key: 'cashflow', label: 'Cashflow' },
 ];
 
 export type Currency = 'USD' | 'CNY';
@@ -110,7 +110,7 @@ export default function App() {
         )}
         {page === 'cashflow' && (
           <>
-            <h2 className="section-title">Cash Flow</h2>
+            <h2 className="section-title">Cashflow</h2>
             <CashFlowChart
               items={cfItems}
               rate={rate}

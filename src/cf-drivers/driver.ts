@@ -6,7 +6,7 @@ import { createMonthlyDriver, createYearlyDriver } from './periodic';
 export interface ICashFlowDriver {
   /** The originating item */
   item: CashFlowItem;
-  /** Cash flow for a specific month (negative = out, positive = in). month is 1-based. */
+  /** Cashflow for a specific month (negative = out, positive = in). month is 1-based. */
   getMonthValue(year: number, month: number): number;
   /** Total months this item has been / will be active (Infinity if no end) */
   getSpentMonths(): number;

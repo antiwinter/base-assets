@@ -1,11 +1,18 @@
 import { useMemo } from 'react';
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, Legend, ReferenceLine, Cell, LabelList,
+  ResponsiveContainer, ReferenceLine, LabelList, Rectangle,
 } from 'recharts';
 import { fmtHuman } from '../types';
 import type { CashFlowItem } from '../types';
-import { createDriver } from '../cf-drivers/driver';
+import {
+  buildDriversWithRates,
+  splitTop3,
+  INCOME_COLORS,
+  EXPENSE_COLORS,
+  findTopmostPositiveKey,
+  findBottommostNegativeKey,
+} from './cashflowChartShared';
 
 interface Props {
   items: CashFlowItem[];
@@ -25,24 +32,22 @@ interface MonthData {
   net: number;
   cumulative: number;
   details: { name: string; value: number }[];
+  incomeTop1: number;
+  incomeTop2: number;
+  incomeTop3: number;
+  incomeOthers: number;
+  expenseTop1: number;
+  expenseTop2: number;
+  expenseTop3: number;
+  expenseOthers: number;
 }
 
-export default function CashFlowChart({ items, rate, symbol, prices, year }: Props) {
-  const cnyPriceUsd = prices.get('CNY') || 0.15;
+const INCOME_RENDER_ORDER = ['incomeTop3', 'incomeTop2', 'incomeTop1', 'incomeOthers'] as const;
+const EXPENSE_RENDER_ORDER = ['expenseTop3', 'expenseTop2', 'expenseTop1', 'expenseOthers'] as const;
 
+export default function CashFlowChart({ items, rate, symbol, prices, year }: Props) {
   const data = useMemo(() => {
-    const displayingCny = rate !== 1;
-    const drivers = items.map((item) => {
-      // Look up item's unit price in USD; no unit → CNY
-      const unitPriceUsd = item.unit ? (prices.get(item.unit) ?? 1) : cnyPriceUsd;
-      // Conversion: item's native value → display currency
-      // displayCNY: value × (unitPriceUsd / cnyPriceUsd)
-      // displayUSD: value × unitPriceUsd
-      const convRate = displayingCny
-        ? unitPriceUsd / cnyPriceUsd
-        : unitPriceUsd;
-      return { driver: createDriver(item), convRate };
-    });
+    const drivers = buildDriversWithRates(items, rate, prices);
 
     let cumulative = 0;
     const result: MonthData[] = [];
@@ -51,16 +56,26 @@ export default function CashFlowChart({ items, rate, symbol, prices, year }: Pro
       let income = 0;
       let expense = 0;
       const details: { name: string; value: number }[] = [];
+      const incomeItems: { name: string; value: number }[] = [];
+      const expenseItems: { name: string; value: number }[] = [];
 
-      for (const { driver, convRate } of drivers) {
+      for (const driver of drivers) {
         const raw = driver.getMonthValue(year, m);
-        const value = Math.round(raw * convRate);
-        if (value > 0) income += value;
-        else if (value < 0) expense += value;
+        const value = Math.round(raw * driver.convRate);
+        if (value > 0) {
+          income += value;
+          incomeItems.push({ name: driver.itemName, value });
+        } else if (value < 0) {
+          expense += value;
+          expenseItems.push({ name: driver.itemName, value });
+        }
         if (value !== 0) {
-          details.push({ name: driver.item.item, value });
+          details.push({ name: driver.itemName, value });
         }
       }
+
+      const topIncome = splitTop3(incomeItems, false);
+      const topExpense = splitTop3(expenseItems, true);
 
       cumulative += income + expense;
       result.push({
@@ -70,18 +85,26 @@ export default function CashFlowChart({ items, rate, symbol, prices, year }: Pro
         net: income + expense,
         cumulative,
         details,
+        incomeTop1: topIncome.top1,
+        incomeTop2: topIncome.top2,
+        incomeTop3: topIncome.top3,
+        incomeOthers: topIncome.others,
+        expenseTop1: topExpense.top1,
+        expenseTop2: topExpense.top2,
+        expenseTop3: topExpense.top3,
+        expenseOthers: topExpense.others,
       });
     }
     return result;
-  }, [items, rate, symbol, prices, cnyPriceUsd, year]);
+  }, [items, rate, prices, year]);
 
   if (items.length === 0) {
-    return <div className="chart-empty">No cash flow items</div>;
+    return <div className="chart-empty">No cashflow items</div>;
   }
 
   return (
     <div className="chart-container">
-      <h3>Monthly Cash Flow — {year}</h3>
+      <h3>Monthly Cashflow — {year}</h3>
       <ResponsiveContainer width="100%" height={360}>
         <ComposedChart data={data} barGap={0}>
           <XAxis dataKey="month" tick={{ fontSize: 12 }} />
@@ -124,14 +147,51 @@ export default function CashFlowChart({ items, rate, symbol, prices, year }: Pro
               );
             }}
           />
-          <Legend />
-          <Bar dataKey="income" name="Income" fill="#8dc77b" radius={[3, 3, 0, 0]}>
+          <Bar
+            dataKey="incomeTop3"
+            name="Income Top3"
+            stackId="income"
+            fill={INCOME_COLORS[0]}
+            shape={(props: any) => {
+              const topKey = findTopmostPositiveKey(props.payload as Record<string, number>, INCOME_RENDER_ORDER);
+              return <Rectangle {...props} radius={topKey === 'incomeTop3' ? [3, 3, 0, 0] : 0} />;
+            }}
+          />
+          <Bar
+            dataKey="incomeTop2"
+            name="Income Top2"
+            stackId="income"
+            fill={INCOME_COLORS[1]}
+            shape={(props: any) => {
+              const topKey = findTopmostPositiveKey(props.payload as Record<string, number>, INCOME_RENDER_ORDER);
+              return <Rectangle {...props} radius={topKey === 'incomeTop2' ? [3, 3, 0, 0] : 0} />;
+            }}
+          />
+          <Bar
+            dataKey="incomeTop1"
+            name="Income Top1"
+            stackId="income"
+            fill={INCOME_COLORS[2]}
+            shape={(props: any) => {
+              const topKey = findTopmostPositiveKey(props.payload as Record<string, number>, INCOME_RENDER_ORDER);
+              return <Rectangle {...props} radius={topKey === 'incomeTop1' ? [3, 3, 0, 0] : 0} />;
+            }}
+          />
+          <Bar
+            dataKey="incomeOthers"
+            name="Income Others"
+            stackId="income"
+            fill={INCOME_COLORS[3]}
+            shape={(props: any) => {
+              const topKey = findTopmostPositiveKey(props.payload as Record<string, number>, INCOME_RENDER_ORDER);
+              return <Rectangle {...props} radius={topKey === 'incomeOthers' ? [3, 3, 0, 0] : 0} />;
+            }}
+          >
             <LabelList
               dataKey="net"
               position="top"
               formatter={(v: number) => `${v >= 0 ? '+' : ''}${fmtHuman(v)}`}
               style={{ fontSize: 11, fontWeight: 600 }}
-              fill="" // overridden per-entry below
               content={({ x, y, width, value }: any) => {
                 const v = value as number;
                 return (
@@ -149,11 +209,47 @@ export default function CashFlowChart({ items, rate, symbol, prices, year }: Pro
               }}
             />
           </Bar>
-          <Bar dataKey="expense" name="Expense" radius={[0, 0, 3, 3]}>
-            {data.map((_, i) => (
-              <Cell key={i} fill="#ff6262" />
-            ))}
-          </Bar>
+
+          <Bar
+            dataKey="expenseTop3"
+            name="Expense Top3"
+            stackId="expense"
+            fill={EXPENSE_COLORS[0]}
+            shape={(props: any) => {
+              const bottomKey = findBottommostNegativeKey(props.payload as Record<string, number>, EXPENSE_RENDER_ORDER);
+              return <Rectangle {...props} radius={bottomKey === 'expenseTop3' ? [3, 3, 0, 0] : 0} />;
+            }}
+          />
+          <Bar
+            dataKey="expenseTop2"
+            name="Expense Top2"
+            stackId="expense"
+            fill={EXPENSE_COLORS[1]}
+            shape={(props: any) => {
+              const bottomKey = findBottommostNegativeKey(props.payload as Record<string, number>, EXPENSE_RENDER_ORDER);
+              return <Rectangle {...props} radius={bottomKey === 'expenseTop2' ? [3, 3, 0, 0] : 0} />;
+            }}
+          />
+          <Bar
+            dataKey="expenseTop1"
+            name="Expense Top1"
+            stackId="expense"
+            fill={EXPENSE_COLORS[2]}
+            shape={(props: any) => {
+              const bottomKey = findBottommostNegativeKey(props.payload as Record<string, number>, EXPENSE_RENDER_ORDER);
+              return <Rectangle {...props} radius={bottomKey === 'expenseTop1' ? [3, 3, 0, 0] : 0} />;
+            }}
+          />
+          <Bar
+            dataKey="expenseOthers"
+            name="Expense Others"
+            stackId="expense"
+            fill={EXPENSE_COLORS[3]}
+            shape={(props: any) => {
+              const bottomKey = findBottommostNegativeKey(props.payload as Record<string, number>, EXPENSE_RENDER_ORDER);
+              return <Rectangle {...props} radius={bottomKey === 'expenseOthers' ? [3, 3, 0, 0] : 0} />;
+            }}
+          />
           <Line
             type="monotone"
             dataKey="cumulative"
