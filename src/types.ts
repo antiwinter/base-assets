@@ -51,8 +51,18 @@ export interface CashFlowItem {
 }
 
 /** Format a number with 3 significant digits + k/m suffix */
-export function fmtHuman(v: number): string {
+export function fmtHuman(v: number, fmt?: 'east'): string {
   const abs = Math.abs(v);
+  const eastFmt = (n: number, unit: string) => {
+    const absN = Math.abs(n);
+    const s = absN >= 100 ? n.toFixed(0) : n.toFixed(1).replace(/\.0$/, '');
+    return `${s}${unit}`;
+  };
+  if (fmt === 'east') {
+    if (abs >= 100_000_000) return eastFmt(v / 100_000_000, 'y');
+    if (abs >= 10_000)      return eastFmt(v / 10_000, 'w');
+    return v.toFixed(0);
+  }
   if (abs >= 1_000_000) {
     const n = v / 1_000_000;
     return `${abs >= 100_000_000 ? n.toFixed(0) : abs >= 10_000_000 ? n.toFixed(1) : n.toFixed(2)}m`;

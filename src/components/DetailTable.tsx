@@ -1,10 +1,9 @@
 import type { Snapshot } from '../types';
-import { fmtHuman } from '../types';
+import { fmtCurrency, fmtNum, getCurrencySymbol } from '../currencyStore';
 
 interface Props {
   snapshots: Snapshot[];
   rate: number;
-  symbol: string;
   selectedIndex: number;
   onSelectIndex: (i: number) => void;
 }
@@ -15,15 +14,6 @@ function fmtDate(ts: number): string {
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   return `${yy}-${mm}-${dd}`;
-}
-
-function fmtHumanSplit(v: number, sym: string): { symbol: string; number: string } {
-  return { symbol: sym, number: fmtHuman(v) };
-}
-
-function fmtHumanPlain(v: number): string {
-  const sign = v < 0 ? '-' : '';
-  return `${sign}${fmtHuman(Math.abs(v))}`;
 }
 
 function timesChange(cur: number, prev: number): { arrow: string; label: string; positive: boolean } | null {
@@ -37,12 +27,11 @@ function timesChange(cur: number, prev: number): { arrow: string; label: string;
   return { arrow: positive ? '↑' : '↓', label: `${Math.abs(pct).toFixed(0)}%`, positive };
 }
 
-function ValCell({ value, prev, sym, className }: { value: number; prev?: number; sym: string; className?: string }) {
-  const h = fmtHumanSplit(value, sym);
+function ValCell({ value, prev, className }: { value: number; prev?: number; className?: string }) {
   const change = prev !== undefined ? timesChange(value, prev) : null;
   return (
     <td className={className}>
-      <span className="sym-dim">{h.symbol}</span>{h.number}
+      <span className="sym-dim">{getCurrencySymbol()}</span>{fmtNum(value)}
       {change && (
         <span className={`change-badge ${change.positive ? 'change-up' : 'change-down'}`}>
           {change.arrow}{change.label}
@@ -52,10 +41,9 @@ function ValCell({ value, prev, sym, className }: { value: number; prev?: number
   );
 }
 
-function DebtCell({ value, prev, sym }: { value: number; prev?: number; sym: string }) {
+function DebtCell({ value, prev }: { value: number; prev?: number }) {
   const absVal = Math.abs(value);
   const absPrev = prev !== undefined ? Math.abs(prev) : undefined;
-  const h = fmtHumanSplit(absVal, sym);
   const change = absPrev !== undefined && absPrev !== 0
     ? (() => {
         const ratio = absVal / absPrev;
@@ -76,7 +64,7 @@ function DebtCell({ value, prev, sym }: { value: number; prev?: number; sym: str
     : null;
   return (
     <td className="debt-cell">
-      <span className="sym-dim">{h.symbol}</span>{h.number}
+      <span className="sym-dim">{getCurrencySymbol()}</span>{fmtNum(absVal)}
       {change && (
         <span className={`change-badge ${change.increased ? 'change-down' : 'change-up'}`}>
           {change.arrow}{change.label}
@@ -86,7 +74,7 @@ function DebtCell({ value, prev, sym }: { value: number; prev?: number; sym: str
   );
 }
 
-export default function DetailTable({ snapshots, rate, symbol, selectedIndex, onSelectIndex }: Props) {
+export default function DetailTable({ snapshots, rate, selectedIndex, onSelectIndex }: Props) {
   if (snapshots.length === 0) return null;
 
   const rows = [...snapshots].reverse();
@@ -124,16 +112,16 @@ export default function DetailTable({ snapshots, rate, symbol, selectedIndex, on
                 }}
               >
                 <td className="date-cell">{fmtDate(s.date)}</td>
-                <ValCell value={s.totalUsd * rate} prev={prev ? prev.totalUsd * rate : undefined} sym={symbol} />
+                <ValCell value={s.totalUsd * rate} prev={prev ? prev.totalUsd * rate : undefined} />
                 <td className={`velocity-cell ${velocity !== undefined ? (velocity >= 0 ? 'change-up' : 'change-down') : ''}`}>
                   {velocity !== undefined ? (
-                    <><span className="sym-dim">{symbol}</span>{fmtHumanPlain(velocity)}</>
+                    <><span className="sym-dim">{getCurrencySymbol()}</span>{fmtNum(velocity)}</>
                   ) : '–'}
                 </td>
-                <ValCell value={s.fiatUsd * rate} prev={prev ? prev.fiatUsd * rate : undefined} sym={symbol} />
-                <ValCell value={s.digitalUsd * rate} prev={prev ? prev.digitalUsd * rate : undefined} sym={symbol} />
-                <ValCell value={s.stockUsd * rate} prev={prev ? prev.stockUsd * rate : undefined} sym={symbol} />
-                <DebtCell value={s.debtUsd * rate} prev={prev ? prev.debtUsd * rate : undefined} sym={symbol} />
+                <ValCell value={s.fiatUsd * rate} prev={prev ? prev.fiatUsd * rate : undefined} />
+                <ValCell value={s.digitalUsd * rate} prev={prev ? prev.digitalUsd * rate : undefined} />
+                <ValCell value={s.stockUsd * rate} prev={prev ? prev.stockUsd * rate : undefined} />
+                <DebtCell value={s.debtUsd * rate} prev={prev ? prev.debtUsd * rate : undefined} />
               </tr>
             );
           })}

@@ -2,13 +2,13 @@ import {
   ComposedChart, Area, Line, XAxis, YAxis, Tooltip,
   ResponsiveContainer, ReferenceLine, Legend,
 } from 'recharts';
-import { CAT_COLORS, fmtHuman } from '../types';
+import { CAT_COLORS } from '../types';
+import { fmtCurrency } from '../currencyStore';
 import type { Snapshot } from '../types';
 
 interface Props {
   snapshots: Snapshot[];
   rate: number;
-  symbol: string;
   selectedIndex: number;
   onSelectIndex: (i: number) => void;
 }
@@ -49,7 +49,7 @@ const linkDisabledStyle: React.CSSProperties = {
   cursor: 'default',
 };
 
-export default function TrendChart({ snapshots, rate, symbol, selectedIndex, onSelectIndex }: Props) {
+export default function TrendChart({ snapshots, rate, selectedIndex, onSelectIndex }: Props) {
   if (snapshots.length === 0) return null;
 
   const data = snapshots.map((s) => ({
@@ -119,11 +119,11 @@ export default function TrendChart({ snapshots, rate, symbol, selectedIndex, onS
           />
           <YAxis
             tick={{ fontSize: 12 }}
-            tickFormatter={(v) => `${symbol}${fmtHuman(v)}`}
+            tickFormatter={(v) => fmtCurrency(v)}
           />
           <Tooltip
             labelFormatter={(ts: number) => fmtAxisDate(ts)}
-            formatter={(v: number) => `${symbol}${fmtHuman(v)}`}
+            formatter={(v: number) => fmtCurrency(v)}
             itemSorter={(item: any) => {
               const order: Record<string, number> = { Fiat: 0, Stock: 1, Digital: 2, Debt: 3 };
               return order[item.name] ?? 4;

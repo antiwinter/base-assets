@@ -1,13 +1,12 @@
 import { useRef, useState } from 'react';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
-import { CAT_COLORS, fmtHuman } from '../types';
+import { CAT_COLORS } from '../types';
 import type { Snapshot } from '../types';
-
+import { fmtCurrency, fmtNum, getCurrencySymbol } from '../currencyStore';
 interface Props {
   snapshot: Snapshot | undefined;
   prevSnapshot: Snapshot | undefined;
   rate: number;
-  symbol: string;
   date?: number;
   netWorth?: number;
   prevNetWorth?: number;
@@ -121,8 +120,7 @@ function CustomContent(props: any) {
         )}
         {showValue && (
           <text x={x + 8} y={y + 36} fontSize={12} fill="#fff">
-            {sym}
-            {fmtHuman(size)}
+            {fmtCurrency(size)}
           </text>
         )}
       </g>
@@ -182,8 +180,7 @@ function CustomContent(props: any) {
       )}
       {showValue && (
         <text x={x + 8} y={y + 36} fontSize={12} fill="#fff" style={{ pointerEvents: 'none' }}>
-          {sym}
-          {fmtHuman(size)}
+          {fmtCurrency(size)}
         </text>
       )}
       {/* Category label — rendered at every depth-2 node so the last sibling's copy is on top */}
@@ -204,7 +201,7 @@ function CustomContent(props: any) {
           textAnchor="middle" fontSize={16} fill="#444"
           style={{ pointerEvents: 'none' }}
         >
-          {catInfo.sym}{fmtHuman(catInfo.value)}
+          {fmtCurrency(catInfo.value)}
         </text>
       )}
       {showCatChange && (
@@ -242,11 +239,10 @@ function CustomTooltip({ active, payload, sym }: any) {
       <span style={{ color, fontWeight: 600 }}>{cat}</span>
       {' / '}
       <strong>{name}</strong>
-      {': '}{sym}{fmtHuman(size)}
+      {': '}{fmtCurrency(size)}
     </div>
   );
 }
-
 function fmtDate(ts: number): string {
   const d = new Date(ts);
   const yy = String(d.getFullYear()).slice(2);
@@ -255,7 +251,7 @@ function fmtDate(ts: number): string {
   return `${yy}/${mm}/${dd}`;
 }
 
-export default function TreemapChart({ snapshot, prevSnapshot, rate, symbol, date, netWorth, prevNetWorth }: Props) {
+export default function TreemapChart({ snapshot, prevSnapshot, rate, date, netWorth, prevNetWorth }: Props) {
   const [zoomedCat, setZoomedCat] = useState<string | null>(null);
   const catLabelsRef = useRef<Map<string, CatLabelInfo>>(new Map());
 
@@ -279,7 +275,7 @@ export default function TreemapChart({ snapshot, prevSnapshot, rate, symbol, dat
   };
 
   // Net worth header
-  const nwStr = netWorth !== undefined ? `${symbol}${fmtHuman(netWorth)}` : '';
+  const nwStr = netWorth !== undefined ? fmtCurrency(netWorth) : '';
   const changeStr = (netWorth !== undefined && prevNetWorth !== undefined && prevNetWorth !== 0)
     ? (() => {
         const pct = ((netWorth - prevNetWorth) / Math.abs(prevNetWorth)) * 100;
@@ -294,7 +290,7 @@ export default function TreemapChart({ snapshot, prevSnapshot, rate, symbol, dat
       <div style={{ display: 'flex', alignItems: 'baseline', marginBottom: 10 }}>
         <span style={{ fontSize: 15, color: '#1e293b' }}>{dateStr}</span>
         <span style={{ fontSize: 15, color: '#94a3b8', marginLeft: 6 }}>
-          <span style={{ opacity: 0.4 }}>{symbol}</span>{netWorth !== undefined ? fmtHuman(netWorth) : '--'}
+          <span style={{ opacity: 0.4 }}>{getCurrencySymbol()}</span>{netWorth !== undefined ? fmtNum(netWorth) : '--'}
         </span>
         {changeStr && (
           <span
@@ -321,9 +317,9 @@ export default function TreemapChart({ snapshot, prevSnapshot, rate, symbol, dat
           dataKey="size"
           aspectRatio={4 / 3}
           isAnimationActive={false}
-          content={<CustomContent sym={symbol} zoomed={zoomed} onCategoryClick={handleCategoryClick} catLabelsRef={catLabelsRef} />}
+          content={<CustomContent zoomed={zoomed} onCategoryClick={handleCategoryClick} catLabelsRef={catLabelsRef} />}
         >
-          <Tooltip content={<CustomTooltip sym={symbol} />} />
+          <Tooltip content={<CustomTooltip />} />
         </Treemap>
       </ResponsiveContainer>
     </div>

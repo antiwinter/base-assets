@@ -1,19 +1,10 @@
 import type { Snapshot } from '../types';
+import { fmtCurrency, getCurrencySymbol } from '../currencyStore';
 
 interface Props {
   snapshot: Snapshot | undefined;
   prevSnapshot: Snapshot | undefined;
   rate: number;
-  symbol: string;
-}
-
-function fmt(value: number, sym: string): { sym: string; num: string } {
-  const abs = Math.abs(value);
-  let num: string;
-  if (abs >= 1_000_000) num = `${(value / 1_000_000).toFixed(2)}m`;
-  else if (abs >= 1_000) num = `${(value / 1_000).toFixed(1)}k`;
-  else num = value.toFixed(2);
-  return { sym, num };
 }
 
 function pctChange(cur: number, prev: number): { arrow: string; pct: string; positive: boolean } | null {
@@ -27,7 +18,7 @@ function pctChange(cur: number, prev: number): { arrow: string; pct: string; pos
   };
 }
 
-export default function SummaryCards({ snapshot, prevSnapshot, rate, symbol }: Props) {
+export default function SummaryCards({ snapshot, prevSnapshot, rate }: Props) {
   if (!snapshot) return null;
 
   const cards = [
@@ -40,13 +31,12 @@ export default function SummaryCards({ snapshot, prevSnapshot, rate, symbol }: P
   return (
     <div className="summary-cards">
       {cards.map((c) => {
-        const f = fmt(c.value, symbol);
         const change = c.prev !== undefined ? pctChange(c.value, c.prev) : null;
         return (
           <div key={c.label} className="card" style={{ borderTop: `3px solid ${c.color}` }}>
             <div className="card-label">{c.label}</div>
             <div className="card-value" style={{ color: c.color }}>
-              <span className="sym-dim">{f.sym}</span>{f.num}
+              <span className="sym-dim">{getCurrencySymbol()}</span>{fmtCurrency(c.value).slice(getCurrencySymbol().length)}
               {change && (
                 <span className={`change-badge ${change.positive ? 'change-up' : 'change-down'}`}>
                   {change.arrow}{change.pct}

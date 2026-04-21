@@ -3,7 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, ReferenceLine, LabelList, ReferenceArea, Rectangle,
 } from 'recharts';
-import { fmtHuman } from '../types';
+import { fmtCurrency, fmtNum } from '../currencyStore';
 import type { CashFlowItem } from '../types';
 import {
   buildDriversWithRates,
@@ -18,7 +18,6 @@ import { CashflowTooltipCard } from './cashflowTooltipShared';
 interface Props {
   items: CashFlowItem[];
   rate: number;
-  symbol: string;
   prices: Map<string, number>;
   selectedYear: number;
   onSelectYear: (year: number) => void;
@@ -50,7 +49,7 @@ const YEAR_COUNT = 20;
 const INCOME_RENDER_ORDER = ['incomeTop3', 'incomeTop2', 'incomeTop1', 'incomeOthers'] as const;
 const EXPENSE_RENDER_ORDER = ['expenseTop3', 'expenseTop2', 'expenseTop1', 'expenseOthers'] as const;
 
-export default function YearlyCashFlowChart({ items, rate, symbol, prices, selectedYear, onSelectYear }: Props) {
+export default function YearlyCashFlowChart({ items, rate, prices, selectedYear, onSelectYear }: Props) {
   const startYear = new Date().getFullYear();
 
   const data = useMemo(() => {
@@ -137,7 +136,7 @@ export default function YearlyCashFlowChart({ items, rate, symbol, prices, selec
           />
           <YAxis
             tick={{ fontSize: 12 }}
-            tickFormatter={(v) => `${symbol}${fmtHuman(v)}`}
+            tickFormatter={(v) => fmtCurrency(v)}
             domain={[yMin, yMax]}
           />
           <ReferenceLine y={0} stroke="#94a3b8" strokeWidth={1} />
@@ -158,7 +157,7 @@ export default function YearlyCashFlowChart({ items, rate, symbol, prices, selec
                 { label: `  ${d.expenseTop3Name ?? 'Top3'}`, value: d.expenseTop3 },
                 { label: '  Others', value: d.expenseOthers },
               ].filter(r => r.value !== 0);
-              return <CashflowTooltipCard title={String(d.year)} symbol={symbol} rows={rows} />;
+              return <CashflowTooltipCard title={String(d.year)} rows={rows} />;
             }}
           />
           <ReferenceArea
@@ -222,7 +221,7 @@ export default function YearlyCashFlowChart({ items, rate, symbol, prices, selec
                     fontWeight={600}
                     fill={v >= 0 ? '#8dc77b' : '#ff6262'}
                   >
-                    {v >= 0 ? '+' : ''}{fmtHuman(v)}
+                    {v >= 0 ? '+' : ''}{fmtNum(v)}
                   </text>
                 );
               }}

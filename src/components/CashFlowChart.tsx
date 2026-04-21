@@ -3,7 +3,7 @@ import {
   ComposedChart, Bar, Line, XAxis, YAxis, Tooltip,
   ResponsiveContainer, ReferenceLine, LabelList, Rectangle,
 } from 'recharts';
-import { fmtHuman } from '../types';
+import { fmtCurrency, fmtNum } from '../currencyStore';
 import type { CashFlowItem } from '../types';
 import {
   buildDriversWithRates,
@@ -18,7 +18,6 @@ import { CashflowTooltipCard } from './cashflowTooltipShared';
 interface Props {
   items: CashFlowItem[];
   rate: number;   // currency conversion rate (1 for USD, cnyRate for CNY)
-  symbol: string; // '¥' or '$'
   prices: Map<string, number>; // symbol → USD price (e.g. CNY→0.15, USD→1)
   year: number;
 }
@@ -46,7 +45,7 @@ interface MonthData {
 const INCOME_RENDER_ORDER = ['incomeTop3', 'incomeTop2', 'incomeTop1', 'incomeOthers'] as const;
 const EXPENSE_RENDER_ORDER = ['expenseTop3', 'expenseTop2', 'expenseTop1', 'expenseOthers'] as const;
 
-export default function CashFlowChart({ items, rate, symbol, prices, year }: Props) {
+export default function CashFlowChart({ items, rate, prices, year }: Props) {
   const data = useMemo(() => {
     const drivers = buildDriversWithRates(items, rate, prices);
 
@@ -111,12 +110,10 @@ export default function CashFlowChart({ items, rate, symbol, prices, year }: Pro
           <XAxis dataKey="month" tick={{ fontSize: 12 }} padding={{ left: 12, right: 4 }} />
           <YAxis
             tick={{ fontSize: 12 }}
-            tickFormatter={(v) => `${symbol}${fmtHuman(v)}`}
+            tickFormatter={(v) => fmtCurrency(v)}
           />
           <ReferenceLine y={0} stroke="#94a3b8" strokeWidth={1} />
           <Tooltip
-            formatter={(v: number, name: string) => [`${symbol}${fmtHuman(v)}`, name]}
-            labelFormatter={(label: string) => label}
             content={({ active, payload, label }) => {
               if (!active || !payload?.length) return null;
               const d = payload[0]?.payload as MonthData | undefined;
@@ -138,7 +135,7 @@ export default function CashFlowChart({ items, rate, symbol, prices, year }: Pro
                 ...expenseDetails,
               ].filter(r => r.value !== 0);
 
-              return <CashflowTooltipCard title={String(label)} symbol={symbol} rows={rows} />;
+              return <CashflowTooltipCard title={String(label)} rows={rows} />;
             }}
           />
           <Bar
@@ -184,7 +181,7 @@ export default function CashFlowChart({ items, rate, symbol, prices, year }: Pro
             <LabelList
               dataKey="net"
               position="top"
-              formatter={(v: number) => `${v >= 0 ? '+' : ''}${fmtHuman(v)}`}
+              formatter={(v: number) => `${v >= 0 ? '+' : ''}${fmtNum(v)}`}
               style={{ fontSize: 11, fontWeight: 600 }}
               content={({ x, y, width, value }: any) => {
                 const v = value as number;
@@ -197,7 +194,7 @@ export default function CashFlowChart({ items, rate, symbol, prices, year }: Pro
                     fontWeight={600}
                     fill={v >= 0 ? '#8dc77b' : '#ff6262'}
                   >
-                    {v >= 0 ? '+' : ''}{fmtHuman(v)}
+                      {v >= 0 ? '+' : ''}{fmtNum(v)}
                   </text>
                 );
               }}

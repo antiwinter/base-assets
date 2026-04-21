@@ -1,4 +1,4 @@
-import { fmtHuman } from '../types';
+import { fmtCurrency } from '../currencyStore';
 
 export interface CashflowTooltipRow {
   label: string;
@@ -8,11 +8,10 @@ export interface CashflowTooltipRow {
 
 interface CashflowTooltipCardProps {
   title: string;
-  symbol: string;
   rows: CashflowTooltipRow[];
 }
 
-export function CashflowTooltipCard({ title, symbol, rows }: CashflowTooltipCardProps) {
+export function CashflowTooltipCard({ title, rows }: CashflowTooltipCardProps) {
   return (
     <div
       style={{
@@ -49,7 +48,7 @@ export function CashflowTooltipCard({ title, symbol, rows }: CashflowTooltipCard
               {r.label}
             </span>
             <span style={{ color: isCumulative ? cumulativeColor : (r.bold ? '#111827' : '#4b5563'), fontWeight: r.bold ? 700 : 400 }}>
-              {symbol}{fmtHuman(r.value)}
+              {fmtCurrency(r.value)}
             </span>
           </div>
         );

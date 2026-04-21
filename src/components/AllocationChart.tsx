@@ -1,10 +1,10 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import type { Snapshot } from '../types';
+import { fmtCurrency } from '../currencyStore';
 
 interface Props {
   snapshot: Snapshot | undefined;
   rate: number;
-  symbol: string;
 }
 
 const COLORS = [
@@ -13,7 +13,7 @@ const COLORS = [
   '#a855f7', '#0ea5e9', '#84cc16',
 ];
 
-export default function AllocationChart({ snapshot, rate, symbol }: Props) {
+export default function AllocationChart({ snapshot, rate }: Props) {
   if (!snapshot) return null;
 
   const data = snapshot.accounts
@@ -43,7 +43,7 @@ export default function AllocationChart({ snapshot, rate, symbol }: Props) {
               <Cell key={i} fill={COLORS[i % COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip formatter={(v: number) => `${symbol}${v.toLocaleString()}`} />
+          <Tooltip formatter={(v: number) => fmtCurrency(v)} />
           <Legend />
         </PieChart>
       </ResponsiveContainer>

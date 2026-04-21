@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { setCurrencyLocale } from './currencyStore';
 import { usePortfolioData } from './hooks/usePortfolioData';
 import { useCashFlowData } from './hooks/useCashFlowData';
 import TreemapChart from './components/TreemapChart';
@@ -35,6 +36,7 @@ export default function App() {
 
   const rate = currency === 'CNY' ? cnyRate : 1;
   const symbol = currency === 'CNY' ? '¥' : '$';
+  setCurrencyLocale(symbol, currency === 'CNY' ? 'east' : undefined);
 
   const isLoading = loading || cfLoading;
   const anyError = error || cfError;
@@ -85,7 +87,6 @@ export default function App() {
               snapshot={selected}
               prevSnapshot={prevSelected}
               rate={rate}
-              symbol={symbol}
               date={selected?.date}
               netWorth={selected ? selected.totalUsd * rate : undefined}
               prevNetWorth={prevSelected ? prevSelected.totalUsd * rate : undefined}
@@ -94,7 +95,6 @@ export default function App() {
             <TrendChart
               snapshots={snapshots}
               rate={rate}
-              symbol={symbol}
               selectedIndex={resolvedIndex}
               onSelectIndex={setSelectedIndex}
             />
@@ -102,7 +102,6 @@ export default function App() {
             <DetailTable
               snapshots={snapshots}
               rate={rate}
-              symbol={symbol}
               selectedIndex={resolvedIndex}
               onSelectIndex={setSelectedIndex}
             />
@@ -114,14 +113,12 @@ export default function App() {
             <CashFlowChart
               items={cfItems}
               rate={rate}
-              symbol={symbol}
               prices={cfPrices}
               year={cfYear}
             />
             <YearlyCashFlowChart
               items={cfItems}
               rate={rate}
-              symbol={symbol}
               prices={cfPrices}
               selectedYear={cfYear}
               onSelectYear={setCfYear}
