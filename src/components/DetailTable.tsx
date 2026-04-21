@@ -1,5 +1,5 @@
 import type { Snapshot } from '../types';
-import { fmtCurrency, fmtNum, getCurrencySymbol } from '../currencyStore';
+import { fmtCurrency, fmtNum, getDisplaySymbol } from '../currencyStore';
 
 interface Props {
   snapshots: Snapshot[];
@@ -31,7 +31,7 @@ function ValCell({ value, prev, className }: { value: number; prev?: number; cla
   const change = prev !== undefined ? timesChange(value, prev) : null;
   return (
     <td className={className}>
-      <span className="sym-dim">{getCurrencySymbol()}</span>{fmtNum(value)}
+      <span className="sym-dim">{getDisplaySymbol()}</span>{fmtNum(value)}
       {change && (
         <span className={`change-badge ${change.positive ? 'change-up' : 'change-down'}`}>
           {change.arrow}{change.label}
@@ -64,7 +64,7 @@ function DebtCell({ value, prev }: { value: number; prev?: number }) {
     : null;
   return (
     <td className="debt-cell">
-      <span className="sym-dim">{getCurrencySymbol()}</span>{fmtNum(absVal)}
+      <span className="sym-dim">{getDisplaySymbol()}</span>{fmtNum(absVal)}
       {change && (
         <span className={`change-badge ${change.increased ? 'change-down' : 'change-up'}`}>
           {change.arrow}{change.label}
@@ -115,7 +115,7 @@ export default function DetailTable({ snapshots, rate, selectedIndex, onSelectIn
                 <ValCell value={s.totalUsd * rate} prev={prev ? prev.totalUsd * rate : undefined} />
                 <td className={`velocity-cell ${velocity !== undefined ? (velocity >= 0 ? 'change-up' : 'change-down') : ''}`}>
                   {velocity !== undefined ? (
-                    <><span className="sym-dim">{getCurrencySymbol()}</span>{fmtNum(velocity)}</>
+                    <><span className="sym-dim">{getDisplaySymbol()}</span>{fmtNum(velocity)}</>
                   ) : '–'}
                 </td>
                 <ValCell value={s.fiatUsd * rate} prev={prev ? prev.fiatUsd * rate : undefined} />

@@ -110,7 +110,7 @@ export default function CashFlowChart({ items, rate, prices, year }: Props) {
           <XAxis dataKey="month" tick={{ fontSize: 12 }} padding={{ left: 12, right: 4 }} />
           <YAxis
             tick={{ fontSize: 12 }}
-            tickFormatter={(v) => fmtCurrency(v)}
+            tickFormatter={(v) => fmtCurrency({ v })}
           />
           <ReferenceLine y={0} stroke="#94a3b8" strokeWidth={1} />
           <Tooltip

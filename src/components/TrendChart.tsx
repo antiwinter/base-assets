@@ -119,11 +119,11 @@ export default function TrendChart({ snapshots, rate, selectedIndex, onSelectInd
           />
           <YAxis
             tick={{ fontSize: 12 }}
-            tickFormatter={(v) => fmtCurrency(v)}
+            tickFormatter={(v) => fmtCurrency({ v })}
           />
           <Tooltip
             labelFormatter={(ts: number) => fmtAxisDate(ts)}
-            formatter={(v: number) => fmtCurrency(v)}
+            formatter={(v: number) => fmtCurrency({ v })}
             itemSorter={(item: any) => {
               const order: Record<string, number> = { Fiat: 0, Stock: 1, Digital: 2, Debt: 3 };
               return order[item.name] ?? 4;

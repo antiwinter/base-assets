@@ -1,5 +1,5 @@
 import type { Snapshot } from '../types';
-import { fmtCurrency, getCurrencySymbol } from '../currencyStore';
+import { fmtCurrency, getDisplaySymbol } from '../currencyStore';
 
 interface Props {
   snapshot: Snapshot | undefined;
@@ -36,7 +36,7 @@ export default function SummaryCards({ snapshot, prevSnapshot, rate }: Props) {
           <div key={c.label} className="card" style={{ borderTop: `3px solid ${c.color}` }}>
             <div className="card-label">{c.label}</div>
             <div className="card-value" style={{ color: c.color }}>
-              <span className="sym-dim">{getCurrencySymbol()}</span>{fmtCurrency(c.value).slice(getCurrencySymbol().length)}
+              <span className="sym-dim">{getDisplaySymbol()}</span>{fmtCurrency({ v: c.value }).slice(getDisplaySymbol().length)}
               {change && (
                 <span className={`change-badge ${change.positive ? 'change-up' : 'change-down'}`}>
                   {change.arrow}{change.pct}

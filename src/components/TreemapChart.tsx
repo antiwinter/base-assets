@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
 import { CAT_COLORS } from '../types';
 import type { Snapshot } from '../types';
-import { fmtCurrency, fmtNum, getCurrencySymbol } from '../currencyStore';
+import { fmtCurrency, fmtNum, getDisplaySymbol } from '../currencyStore';
 interface Props {
   snapshot: Snapshot | undefined;
   prevSnapshot: Snapshot | undefined;
@@ -120,7 +120,7 @@ function CustomContent(props: any) {
         )}
         {showValue && (
           <text x={x + 8} y={y + 36} fontSize={12} fill="#fff">
-            {fmtCurrency(size)}
+            {fmtCurrency({ v: size })}
           </text>
         )}
       </g>
@@ -180,7 +180,7 @@ function CustomContent(props: any) {
       )}
       {showValue && (
         <text x={x + 8} y={y + 36} fontSize={12} fill="#fff" style={{ pointerEvents: 'none' }}>
-          {fmtCurrency(size)}
+          {fmtCurrency({ v: size })}
         </text>
       )}
       {/* Category label — rendered at every depth-2 node so the last sibling's copy is on top */}
@@ -201,7 +201,7 @@ function CustomContent(props: any) {
           textAnchor="middle" fontSize={16} fill="#444"
           style={{ pointerEvents: 'none' }}
         >
-          {fmtCurrency(catInfo.value)}
+          {fmtCurrency({ v: catInfo.value })}
         </text>
       )}
       {showCatChange && (
@@ -239,7 +239,7 @@ function CustomTooltip({ active, payload, sym }: any) {
       <span style={{ color, fontWeight: 600 }}>{cat}</span>
       {' / '}
       <strong>{name}</strong>
-      {': '}{fmtCurrency(size)}
+      {': '}{fmtCurrency({ v: size })}
     </div>
   );
 }
@@ -275,7 +275,7 @@ export default function TreemapChart({ snapshot, prevSnapshot, rate, date, netWo
   };
 
   // Net worth header
-  const nwStr = netWorth !== undefined ? fmtCurrency(netWorth) : '';
+  const nwStr = netWorth !== undefined ? fmtCurrency({ v: netWorth }) : '';
   const changeStr = (netWorth !== undefined && prevNetWorth !== undefined && prevNetWorth !== 0)
     ? (() => {
         const pct = ((netWorth - prevNetWorth) / Math.abs(prevNetWorth)) * 100;
@@ -290,7 +290,7 @@ export default function TreemapChart({ snapshot, prevSnapshot, rate, date, netWo
       <div style={{ display: 'flex', alignItems: 'baseline', marginBottom: 10 }}>
         <span style={{ fontSize: 15, color: '#1e293b' }}>{dateStr}</span>
         <span style={{ fontSize: 15, color: '#94a3b8', marginLeft: 6 }}>
-          <span style={{ opacity: 0.4 }}>{getCurrencySymbol()}</span>{netWorth !== undefined ? fmtNum(netWorth) : '--'}
+          <span style={{ opacity: 0.4 }}>{getDisplaySymbol()}</span>{netWorth !== undefined ? fmtNum(netWorth) : '--'}
         </span>
         {changeStr && (
           <span

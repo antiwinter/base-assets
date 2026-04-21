@@ -43,7 +43,7 @@ export default function AllocationChart({ snapshot, rate }: Props) {
               <Cell key={i} fill={COLORS[i % COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip formatter={(v: number) => fmtCurrency(v)} />
+          <Tooltip formatter={(v: number) => fmtCurrency({ v })} />
           <Legend />
         </PieChart>
       </ResponsiveContainer>

@@ -1,23 +1,30 @@
 import { fmtHuman } from './types';
 
-let _symbol = '¥';
-let _fmt: 'east' | undefined = 'east';
+let _displaySymbol = '¥';
 
-export function setCurrencyLocale(symbol: string, fmt: 'east' | undefined) {
-  _symbol = symbol;
-  _fmt = fmt;
+const SYMBOL_TO_FMT: Record<string, 'east' | undefined> = {
+  '¥': 'east',
+  '$': undefined,
+};
+
+export function setDisplayCurrency(symbol: string) {
+  _displaySymbol = symbol;
 }
 
-export function getCurrencySymbol(): string {
-  return _symbol;
+export function getDisplaySymbol(): string {
+  return _displaySymbol;
 }
 
-/** Format a number as a full currency string, e.g. ¥1.5w or $1.5k */
-export function fmtCurrency(v: number): string {
-  return `${_symbol}${fmtHuman(v, _fmt)}`;
+function getDisplayFmt(): 'east' | undefined {
+  return SYMBOL_TO_FMT[_displaySymbol];
 }
 
-/** Format just the number part (no symbol), honouring the current locale format */
+/** Format a number as currency with current display symbol; optional unit is reserved for conversion. */
+export function fmtCurrency({ v }: { v: number; unit?: string }): string {
+  return `${_displaySymbol}${fmtHuman(v, getDisplayFmt())}`;
+}
+
+/** Format just the number part (no symbol), honoring current display locale. */
 export function fmtNum(v: number): string {
-  return fmtHuman(v, _fmt);
+  return fmtHuman(v, getDisplayFmt());
 }

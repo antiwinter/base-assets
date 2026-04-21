@@ -48,7 +48,7 @@ export function CashflowTooltipCard({ title, rows }: CashflowTooltipCardProps) {
               {r.label}
             </span>
             <span style={{ color: isCumulative ? cumulativeColor : (r.bold ? '#111827' : '#4b5563'), fontWeight: r.bold ? 700 : 400 }}>
-              {fmtCurrency(r.value)}
+              {fmtCurrency({ v: r.value })}
             </span>
           </div>
         );

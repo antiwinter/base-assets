@@ -136,7 +136,7 @@ export default function YearlyCashFlowChart({ items, rate, prices, selectedYear,
           />
           <YAxis
             tick={{ fontSize: 12 }}
-            tickFormatter={(v) => fmtCurrency(v)}
+            tickFormatter={(v) => fmtCurrency({ v })}
             domain={[yMin, yMax]}
           />
           <ReferenceLine y={0} stroke="#94a3b8" strokeWidth={1} />

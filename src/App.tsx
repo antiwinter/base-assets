@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { setCurrencyLocale } from './currencyStore';
+import { setDisplayCurrency } from './currencyStore';
 import { usePortfolioData } from './hooks/usePortfolioData';
 import { useCashFlowData } from './hooks/useCashFlowData';
 import TreemapChart from './components/TreemapChart';
@@ -36,7 +36,7 @@ export default function App() {
 
   const rate = currency === 'CNY' ? cnyRate : 1;
   const symbol = currency === 'CNY' ? '¥' : '$';
-  setCurrencyLocale(symbol, currency === 'CNY' ? 'east' : undefined);
+  setDisplayCurrency(symbol);
 
   const isLoading = loading || cfLoading;
   const anyError = error || cfError;
