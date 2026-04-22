@@ -22,6 +22,24 @@ function endYM(endTs: number): [number, number] {
   return [d.getFullYear(), d.getMonth() + 1];
 }
 
+/**
+ * Convert a (year, month=1..12, totalMonths) tuple where (year, month) is the
+ * **last** payment month into the (year, month=1..12) of the **first** payment.
+ *
+ *   If end = 2043/12 and term = 360, the 360 monthly payments span
+ *   2014/01 → 2043/12, so this returns [2014, 1].
+ *
+ * Encoding note: months are addressed via Y*12 + M where M ∈ [1..12]; that
+ * makes (Y=2024, M=12) == 24300 and (Y=2025, M=1) == 24301, so converting
+ * back uses (m-1) to keep December at the right year boundary.
+ */
+function firstPaymentYM(endY: number, endM: number, totalMonths: number): [number, number] {
+  const startTotal = endY * 12 + endM - totalMonths + 1;
+  const startY = Math.floor((startTotal - 1) / 12);
+  const startM = ((startTotal - 1) % 12 + 12) % 12 + 1;
+  return [startY, startM];
+}
+
 export function createEpiDriver(item: CashFlowItem): ICashFlowDriver {
   const P = Math.abs(item.amount);
   const annualRate = item.rate; // percent
@@ -30,10 +48,8 @@ export function createEpiDriver(item: CashFlowItem): ICashFlowDriver {
 
   const [endY, endM] = item.end ? endYM(item.end) : [2099, 1];
 
-  // Compute start year/month from end and term
-  const startTotalMonths = endY * 12 + endM - totalMonths;
-  const startY = Math.floor(startTotalMonths / 12);
-  const startM = startTotalMonths % 12 || 12;
+  // `end` is the last payment month, so the first payment is `end - (term-1)`.
+  const [startY, startM] = firstPaymentYM(endY, endM, totalMonths);
 
   // Compute PMT
   let pmt = 0;
@@ -77,9 +93,7 @@ export function epiRemainingPrincipal(item: CashFlowItem, asOf: number): number 
   const r = item.rate / 12;
 
   const [endY, endM] = endYM(item.end);
-  const startTotalMonths = endY * 12 + endM - n;
-  const startY = Math.floor(startTotalMonths / 12);
-  const startM = startTotalMonths % 12 || 12;
+  const [startY, startM] = firstPaymentYM(endY, endM, n);
 
   const a = new Date(asOf);
   const aY = a.getFullYear();
