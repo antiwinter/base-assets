@@ -3,7 +3,7 @@ import {
   ResponsiveContainer, ReferenceLine, Legend,
 } from 'recharts';
 import { CAT_COLORS } from '../types';
-import { fmtCurrency } from '../settingStore';
+import { fmtCurrency, useSettingStore } from '../settingStore';
 import type { Snapshot } from '../types';
 
 interface Props {
@@ -50,6 +50,7 @@ const linkDisabledStyle: React.CSSProperties = {
 };
 
 export default function TrendChart({ snapshots, rate, selectedIndex, onSelectIndex }: Props) {
+  const hideFixed = useSettingStore((s) => s.hideFixed);
   if (snapshots.length === 0) return null;
 
   const data = snapshots.map((s) => ({
@@ -57,6 +58,7 @@ export default function TrendChart({ snapshots, rate, selectedIndex, onSelectInd
     fiat: Math.round(s.fiatUsd * rate),
     digital: Math.round(s.digitalUsd * rate),
     stock: Math.round(s.stockUsd * rate),
+    fixed: hideFixed ? 0 : Math.round(s.fixedUsd * rate),
     debt: Math.round(Math.abs(s.debtUsd) * rate),
   }));
 
@@ -125,11 +127,22 @@ export default function TrendChart({ snapshots, rate, selectedIndex, onSelectInd
             labelFormatter={(ts: number) => fmtAxisDate(ts)}
             formatter={(v: number) => fmtCurrency({ v })}
             itemSorter={(item: any) => {
-              const order: Record<string, number> = { Fiat: 0, Stock: 1, Digital: 2, Debt: 3 };
-              return order[item.name] ?? 4;
+              const order: Record<string, number> = { Fiat: 0, Stock: 1, Digital: 2, Fixed: 3, Debt: 4 };
+              return order[item.name] ?? 5;
             }}
           />
           <Legend />
+          {!hideFixed && (
+            <Area
+              type="monotone"
+              dataKey="fixed"
+              name="Fixed"
+              stackId="1"
+              fill={CAT_COLORS.Fixed}
+              stroke={CAT_COLORS.Fixed}
+              fillOpacity={1}
+            />
+          )}
           <Area
             type="monotone"
             dataKey="digital"

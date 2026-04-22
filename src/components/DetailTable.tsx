@@ -1,5 +1,5 @@
 import type { Snapshot } from '../types';
-import { fmtCurrency, fmtNum, getDisplaySymbol } from '../settingStore';
+import { fmtCurrency, fmtNum, getDisplaySymbol, useSettingStore } from '../settingStore';
 
 interface Props {
   snapshots: Snapshot[];
@@ -12,8 +12,7 @@ function fmtDate(ts: number): string {
   const d = new Date(ts);
   const yy = String(d.getFullYear()).slice(2);
   const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yy}-${mm}-${dd}`;
+  return `${yy}-${mm}`;
 }
 
 function timesChange(cur: number, prev: number): { arrow: string; label: string; positive: boolean } | null {
@@ -75,9 +74,11 @@ function DebtCell({ value, prev }: { value: number; prev?: number }) {
 }
 
 export default function DetailTable({ snapshots, rate, selectedIndex, onSelectIndex }: Props) {
+  const hideFixed = useSettingStore((s) => s.hideFixed);
   if (snapshots.length === 0) return null;
 
   const rows = [...snapshots].reverse();
+  const totalOf = (s: Snapshot) => hideFixed ? s.totalUsd - s.fixedUsd : s.totalUsd;
 
   return (
     <div className="detail-table-container">
@@ -90,6 +91,7 @@ export default function DetailTable({ snapshots, rate, selectedIndex, onSelectIn
             <th>Fiat</th>
             <th>Digital</th>
             <th>Stock</th>
+            {!hideFixed && <th>Fixed</th>}
             <th>Debt</th>
           </tr>
         </thead>
@@ -98,8 +100,10 @@ export default function DetailTable({ snapshots, rate, selectedIndex, onSelectIn
             const origIndex = snapshots.length - 1 - i;
             const prev = i < rows.length - 1 ? rows[i + 1] : undefined;
             const isSelected = origIndex === selectedIndex;
-            const velocity = prev
-              ? ((s.totalUsd - prev.totalUsd) * rate) / ((s.date - prev.date) / 86_400_000)
+            const curTotal = totalOf(s);
+            const prevTotal = prev ? totalOf(prev) : undefined;
+            const velocity = prev && prevTotal !== undefined
+              ? ((curTotal - prevTotal) * rate) / ((s.date - prev.date) / 86_400_000)
               : undefined;
             return (
               <tr
@@ -112,7 +116,7 @@ export default function DetailTable({ snapshots, rate, selectedIndex, onSelectIn
                 }}
               >
                 <td className="date-cell">{fmtDate(s.date)}</td>
-                <ValCell value={s.totalUsd * rate} prev={prev ? prev.totalUsd * rate : undefined} />
+                <ValCell value={curTotal * rate} prev={prevTotal !== undefined ? prevTotal * rate : undefined} />
                 <td className={`velocity-cell ${velocity !== undefined ? (velocity >= 0 ? 'change-up' : 'change-down') : ''}`}>
                   {velocity !== undefined ? (
                     <><span className="sym-dim">{getDisplaySymbol()}</span>{fmtNum(velocity)}</>
@@ -121,6 +125,9 @@ export default function DetailTable({ snapshots, rate, selectedIndex, onSelectIn
                 <ValCell value={s.fiatUsd * rate} prev={prev ? prev.fiatUsd * rate : undefined} />
                 <ValCell value={s.digitalUsd * rate} prev={prev ? prev.digitalUsd * rate : undefined} />
                 <ValCell value={s.stockUsd * rate} prev={prev ? prev.stockUsd * rate : undefined} />
+                {!hideFixed && (
+                  <ValCell value={s.fixedUsd * rate} prev={prev ? prev.fixedUsd * rate : undefined} />
+                )}
                 <DebtCell value={s.debtUsd * rate} prev={prev ? prev.debtUsd * rate : undefined} />
               </tr>
             );

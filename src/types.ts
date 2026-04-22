@@ -2,6 +2,7 @@ export const CAT_COLORS: Record<string, string> = {
   Fiat: '#8dc77b',
   Stock: '#9698e5',
   Digital: '#f8c12d',
+  Fixed: '#000000',
   Debt: '#ff6262',
 };
 
@@ -18,13 +19,15 @@ export interface PriceRecord {
   price: number;  // USD price
 }
 
+export type AssetCategory = 'fiat' | 'digital' | 'stock' | 'fixed' | 'debt';
+
 export interface SnapshotAccount {
   platform: string;
   account: string;
   balance: number;
   unit: string;
   valueUsd: number;
-  category: 'fiat' | 'digital' | 'stock' | 'debt';
+  category: AssetCategory;
 }
 
 export interface Snapshot {
@@ -34,6 +37,7 @@ export interface Snapshot {
   fiatUsd: number;
   digitalUsd: number;
   stockUsd: number;
+  fixedUsd: number;
   debtUsd: number;
 }
 

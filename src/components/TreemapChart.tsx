@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
 import { CAT_COLORS } from '../types';
 import type { Snapshot } from '../types';
-import { fmtCurrency, fmtNum, getDisplaySymbol } from '../settingStore';
+import { fmtCurrency, fmtNum, getDisplaySymbol, useSettingStore } from '../settingStore';
 interface Props {
   snapshot: Snapshot | undefined;
   prevSnapshot: Snapshot | undefined;
@@ -42,20 +42,34 @@ interface CategoryNode {
   children: PlatformNode[];
 }
 
-function buildTreeData(snapshot: Snapshot, prevSnapshot: Snapshot | undefined, rate: number): CategoryNode[] {
+const CAT_ORDER = ['Fiat', 'Stock', 'Digital', 'Debt', 'Fixed'] as const;
+
+const CATEGORY_LABEL: Record<string, string> = {
+  fiat: 'Fiat',
+  stock: 'Stock',
+  digital: 'Digital',
+  fixed: 'Fixed',
+  debt: 'Debt',
+};
+
+function buildTreeData(
+  snapshot: Snapshot,
+  prevSnapshot: Snapshot | undefined,
+  rate: number,
+  hideFixed: boolean,
+): CategoryNode[] {
   const catAccounts: Record<string, Map<string, number>> = {
     Fiat: new Map(),
     Stock: new Map(),
     Digital: new Map(),
+    Fixed: new Map(),
     Debt: new Map(),
   };
 
   for (const a of snapshot.accounts) {
+    if (hideFixed && a.category === 'fixed') continue;
     const val = Math.abs(a.valueUsd * rate);
-    const cat = a.category === 'fiat' ? 'Fiat'
-      : a.category === 'stock' ? 'Stock'
-      : a.category === 'digital' ? 'Digital'
-      : 'Debt';
+    const cat = CATEGORY_LABEL[a.category] ?? 'Fiat';
     const existing = catAccounts[cat].get(a.platform) ?? 0;
     catAccounts[cat].set(a.platform, existing + val);
   }
@@ -64,11 +78,13 @@ function buildTreeData(snapshot: Snapshot, prevSnapshot: Snapshot | undefined, r
     Fiat: { cur: snapshot.fiatUsd * rate, prev: prevSnapshot ? prevSnapshot.fiatUsd * rate : undefined },
     Stock: { cur: snapshot.stockUsd * rate, prev: prevSnapshot ? prevSnapshot.stockUsd * rate : undefined },
     Digital: { cur: snapshot.digitalUsd * rate, prev: prevSnapshot ? prevSnapshot.digitalUsd * rate : undefined },
+    Fixed: { cur: snapshot.fixedUsd * rate, prev: prevSnapshot ? prevSnapshot.fixedUsd * rate : undefined },
     Debt: { cur: Math.abs(snapshot.debtUsd * rate), prev: prevSnapshot ? Math.abs(prevSnapshot.debtUsd * rate) : undefined },
   };
 
   const result: CategoryNode[] = [];
-  for (const cat of ['Fiat', 'Stock', 'Digital', 'Debt']) {
+  for (const cat of CAT_ORDER) {
+    if (hideFixed && cat === 'Fixed') continue;
     const platforms = catAccounts[cat];
     const total = catTotals[cat];
     if (Math.abs(total.cur) < 0.01 && platforms.size === 0) continue;
@@ -254,10 +270,11 @@ function fmtDate(ts: number): string {
 export default function TreemapChart({ snapshot, prevSnapshot, rate, date, netWorth, prevNetWorth }: Props) {
   const [zoomedCat, setZoomedCat] = useState<string | null>(null);
   const catLabelsRef = useRef<Map<string, CatLabelInfo>>(new Map());
+  const hideFixed = useSettingStore((s) => s.hideFixed);
 
   if (!snapshot) return null;
 
-  const data = buildTreeData(snapshot, prevSnapshot, rate);
+  const data = buildTreeData(snapshot, prevSnapshot, rate, hideFixed);
   if (data.length === 0) return <div className="chart-empty">No assets</div>;
 
   // When zoomed, show only that category's children as top-level data

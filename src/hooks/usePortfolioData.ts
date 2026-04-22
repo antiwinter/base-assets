@@ -1,7 +1,28 @@
 import { useState, useEffect, useCallback } from 'react';
 import { bitable } from '@lark-base-open/js-sdk';
-import type { DataRecord, PriceRecord, Snapshot, SnapshotAccount } from '../types';
+import type { AssetCategory, DataRecord, PriceRecord, Snapshot, SnapshotAccount } from '../types';
 import { fetchAllRecords, parseSelect } from './larkUtils';
+
+/**
+ * Categorise an account row. Precedence (top wins):
+ *   1. account is `debt` or `loan`             → debt
+ *   2. account is `stock` or unit looks like a → stock
+ *      stock symbol (contains '/', e.g. NASDAQ/ICG)
+ *   3. unit starts with '$' (e.g. $BTC) or     → digital
+ *      platform.type === 'ex'
+ *   4. platform.type === 'fixed'               → fixed
+ *   5. otherwise                               → fiat
+ */
+function categorize(account: string, unit: string, platformType: string): AssetCategory {
+  const a = account.trim().toLowerCase();
+  const u = unit.trim();
+  const t = platformType.trim().toLowerCase();
+  if (a === 'debt' || a === 'loan') return 'debt';
+  if (a === 'stock' || u.includes('/')) return 'stock';
+  if (u.startsWith('$') || t === 'ex') return 'digital';
+  if (t === 'fixed') return 'fixed';
+  return 'fiat';
+}
 
 function buildSnapshots(
   data: DataRecord[],
@@ -27,6 +48,7 @@ function buildSnapshots(
     let fiatUsd = 0;
     let digitalUsd = 0;
     let stockUsd = 0;
+    let fixedUsd = 0;
     let debtUsd = 0;
 
     const accounts: SnapshotAccount[] = records.map((r) => {
@@ -34,29 +56,21 @@ function buildSnapshots(
       const valueUsd = r.balance * price;
       totalUsd += valueUsd;
 
-      const acct = r.account.toLowerCase();
-      const platformType = platformTypeMap.get(r.platform)?.toLowerCase() ?? '';
+      const platformType = platformTypeMap.get(r.platform) ?? '';
+      const category = categorize(r.account, r.unit, platformType);
 
-      let category: 'fiat' | 'digital' | 'stock' | 'debt';
-      if (acct === 'debt') {
-        debtUsd += valueUsd;
-        category = 'debt';
-      } else if (acct === 'stock') {
-        stockUsd += valueUsd;
-        category = 'stock';
-      } else if (platformType === 'ex') {
-        digitalUsd += valueUsd;
-        category = 'digital';
-      } else {
-        // no account set → fiat balance
-        fiatUsd += valueUsd;
-        category = 'fiat';
+      switch (category) {
+        case 'debt':    debtUsd    += valueUsd; break;
+        case 'stock':   stockUsd   += valueUsd; break;
+        case 'digital': digitalUsd += valueUsd; break;
+        case 'fixed':   fixedUsd   += valueUsd; break;
+        case 'fiat':    fiatUsd    += valueUsd; break;
       }
 
       return { platform: r.platform, account: r.account, balance: r.balance, unit: r.unit, valueUsd, category };
     });
 
-    snapshots.push({ date, accounts, totalUsd, fiatUsd, digitalUsd, stockUsd, debtUsd });
+    snapshots.push({ date, accounts, totalUsd, fiatUsd, digitalUsd, stockUsd, fixedUsd, debtUsd });
   }
 
   snapshots.sort((a, b) => a.date - b.date);

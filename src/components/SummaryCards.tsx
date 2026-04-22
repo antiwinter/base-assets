@@ -25,6 +25,7 @@ export default function SummaryCards({ snapshot, prevSnapshot, rate }: Props) {
     { label: 'Fiat', value: snapshot.fiatUsd * rate, prev: prevSnapshot ? prevSnapshot.fiatUsd * rate : undefined, color: '#82ca9d' },
     { label: 'Stock', value: snapshot.stockUsd * rate, prev: prevSnapshot ? prevSnapshot.stockUsd * rate : undefined, color: '#8884d8' },
     { label: 'Digital', value: snapshot.digitalUsd * rate, prev: prevSnapshot ? prevSnapshot.digitalUsd * rate : undefined, color: '#ffc658' },
+    { label: 'Fixed', value: snapshot.fixedUsd * rate, prev: prevSnapshot ? prevSnapshot.fixedUsd * rate : undefined, color: '#000000' },
     { label: 'Debt', value: snapshot.debtUsd * rate, prev: prevSnapshot ? prevSnapshot.debtUsd * rate : undefined, color: '#c0392b' },
   ];
 
