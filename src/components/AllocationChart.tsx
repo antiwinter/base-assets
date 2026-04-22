@@ -1,6 +1,6 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import type { Snapshot } from '../types';
-import { fmtCurrency } from '../currencyStore';
+import { fmtCurrency } from '../settingStore';
 
 interface Props {
   snapshot: Snapshot | undefined;

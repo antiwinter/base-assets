@@ -1,5 +1,5 @@
 import type { Snapshot } from '../types';
-import { fmtCurrency, getDisplaySymbol } from '../currencyStore';
+import { fmtCurrency, getDisplaySymbol } from '../settingStore';
 
 interface Props {
   snapshot: Snapshot | undefined;

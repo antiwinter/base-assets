@@ -3,7 +3,7 @@ import {
   ComposedChart, Bar, Line, XAxis, YAxis, Tooltip,
   ResponsiveContainer, ReferenceLine, LabelList, Rectangle,
 } from 'recharts';
-import { fmtCurrency, fmtNum } from '../currencyStore';
+import { fmtCurrency, fmtNum } from '../settingStore';
 import type { CashFlowItem } from '../types';
 import {
   buildDriversWithRates,

@@ -3,7 +3,7 @@ import {
   ResponsiveContainer, ReferenceLine, Legend,
 } from 'recharts';
 import { CAT_COLORS } from '../types';
-import { fmtCurrency } from '../currencyStore';
+import { fmtCurrency } from '../settingStore';
 import type { Snapshot } from '../types';
 
 interface Props {

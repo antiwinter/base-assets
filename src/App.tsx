@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { setDisplayCurrency } from './currencyStore';
+import { useSettingStore, type AppTab } from './settingStore';
 import { usePortfolioData } from './hooks/usePortfolioData';
 import { useCashFlowData } from './hooks/useCashFlowData';
 import TreemapChart from './components/TreemapChart';
@@ -8,9 +8,7 @@ import DetailTable from './components/DetailTable';
 import CashFlowChart from './components/CashFlowChart';
 import YearlyCashFlowChart from './components/YearlyCashFlowChart';
 
-type Page = 'snapshot' | 'cashflow';
-
-const NAV_ITEMS: { key: Page; label: string }[] = [
+const NAV_ITEMS: { key: AppTab; label: string }[] = [
   { key: 'snapshot', label: 'Snapshot' },
   { key: 'cashflow', label: 'Cashflow' },
 ];
@@ -20,10 +18,11 @@ export type Currency = 'USD' | 'CNY';
 export default function App() {
   const { snapshots, cnyRate, loading, error, reload } = usePortfolioData();
   const { items: cfItems, prices: cfPrices, loading: cfLoading, error: cfError } = useCashFlowData();
-  const [currency, setCurrency] = useState<Currency>('CNY');
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
-  const [page, setPage] = useState<Page>('snapshot');
-  const [cfYear, setCfYear] = useState<number>(new Date().getFullYear());
+  const { displayCurrency, currentTab, currentYear, setDisplayCurrency, setCurrentTab, setCurrentYear } = useSettingStore();
+  const currency = displayCurrency as Currency;
+  const page = currentTab;
+  const cfYear = currentYear;
 
   // Resolve selected index: -1 means latest
   const resolvedIndex = selectedIndex < 0 || selectedIndex >= snapshots.length
@@ -35,8 +34,6 @@ export default function App() {
   const prev = snapshots.length > 1 ? snapshots[snapshots.length - 2] : undefined;
 
   const rate = currency === 'CNY' ? cnyRate : 1;
-  const symbol = currency === 'CNY' ? '¥' : '$';
-  setDisplayCurrency(symbol);
 
   const isLoading = loading || cfLoading;
   const anyError = error || cfError;
@@ -61,7 +58,7 @@ export default function App() {
           <button
             key={item.key}
             className={`nav-item ${page === item.key ? 'active' : ''}`}
-            onClick={() => setPage(item.key)}
+            onClick={() => setCurrentTab(item.key as AppTab)}
           >
             {item.label}
           </button>
@@ -72,7 +69,7 @@ export default function App() {
             <button
               key={c}
               className={`currency-btn ${currency === c ? 'active' : ''}`}
-              onClick={() => setCurrency(c)}
+              onClick={() => setDisplayCurrency(c)}
             >
               {c}
             </button>
@@ -121,7 +118,7 @@ export default function App() {
               rate={rate}
               prices={cfPrices}
               selectedYear={cfYear}
-              onSelectYear={setCfYear}
+              onSelectYear={setCurrentYear}
             />
           </>
         )}

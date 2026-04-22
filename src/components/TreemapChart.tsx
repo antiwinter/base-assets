@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
 import { CAT_COLORS } from '../types';
 import type { Snapshot } from '../types';
-import { fmtCurrency, fmtNum, getDisplaySymbol } from '../currencyStore';
+import { fmtCurrency, fmtNum, getDisplaySymbol } from '../settingStore';
 interface Props {
   snapshot: Snapshot | undefined;
   prevSnapshot: Snapshot | undefined;

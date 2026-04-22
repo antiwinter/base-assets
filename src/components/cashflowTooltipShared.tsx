@@ -1,4 +1,4 @@
-import { fmtCurrency } from '../currencyStore';
+import { fmtCurrency } from '../settingStore';
 
 export interface CashflowTooltipRow {
   label: string;
