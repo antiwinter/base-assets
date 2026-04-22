@@ -81,12 +81,12 @@ export function useAddSnapshot(onSuccess?: () => void) {
       setAdding(true);
       setError(null);
 
-      const { accounts, detectUnit, epiDebtByPlatform, existingByKey: existingMap } =
+      const { accounts, detectUnit, epiLoanByPlatform, existingByKey: existingMap } =
         await loadEditorMeta();
       if (accounts.length === 0) throw new Error('No accounts found in the accounts table.');
 
       const date = todayDayMs();
-      const entries = buildFreshEntries(accounts, detectUnit, epiDebtByPlatform);
+      const entries = buildFreshEntries(accounts, detectUnit, epiLoanByPlatform);
       const { toInsert, toUpdate } = partition(entries, date, existingMap);
 
       if (toInsert.length === 0 && toUpdate.length === 0) {

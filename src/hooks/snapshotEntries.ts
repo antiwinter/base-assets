@@ -27,9 +27,9 @@ export interface EditorMeta {
   detectUnit: (platform: string, account: string, type: string) => string;
   /**
    * Sum of remaining EPI principal per platform, already negated so the value
-   * can be dropped directly into the `debt` sub-account's balance.
+   * can be dropped directly into the `loan` sub-account's balance.
    */
-  epiDebtByPlatform: Map<string, number>;
+  epiLoanByPlatform: Map<string, number>;
   /**
    * Existing data rows indexed by `${dayMs}|${platform}|${account}` so the
    * caller can decide between "insert new" / "update default" / "leave alone".
@@ -79,10 +79,10 @@ export async function loadEditorMeta(): Promise<EditorMeta> {
   const dataUnitId = dataMap.get('Unit') ?? dataMap.get('unit') ?? '';
   const dataBalanceId = dataMap.get('Balance') ?? dataMap.get('balance') ?? '';
 
-  const [acctRecords, dataRecords, epiDebtByPlatform] = await Promise.all([
+  const [acctRecords, dataRecords, epiLoanByPlatform] = await Promise.all([
     fetchAllRecords(accountsTable),
     fetchAllRecords(dataTable),
-    loadEpiDebtByPlatform(todayDayMs()),
+    loadEpiLoanByPlatform(todayDayMs()),
   ]);
 
   const accounts: AccountInfo[] = [];
@@ -129,7 +129,7 @@ export async function loadEditorMeta(): Promise<EditorMeta> {
     return cur?.unit ?? pickDefaultUnit(type);
   };
 
-  return { accounts, detectUnit, epiDebtByPlatform, existingByKey };
+  return { accounts, detectUnit, epiLoanByPlatform, existingByKey };
 }
 
 /**
@@ -137,7 +137,7 @@ export async function loadEditorMeta(): Promise<EditorMeta> {
  * `platform -> -sum(remainingPrincipal)` as of `asOf`. Returns an empty map
  * (without throwing) if the table is missing or has no qualifying rows.
  */
-async function loadEpiDebtByPlatform(asOf: number): Promise<Map<string, number>> {
+async function loadEpiLoanByPlatform(asOf: number): Promise<Map<string, number>> {
   try {
     const cfiTable = await bitable.base.getTable('cfi');
     const cfiFields = await cfiTable.getFieldMetaList();
@@ -194,7 +194,7 @@ async function loadEpiDebtByPlatform(asOf: number): Promise<Map<string, number>>
 export function buildFreshEntries(
   accounts: AccountInfo[],
   detectUnit: (platform: string, account: string, type: string) => string,
-  epiDebtByPlatform: Map<string, number> = new Map(),
+  epiLoanByPlatform: Map<string, number> = new Map(),
 ): SnapshotEntry[] {
   const entries: SnapshotEntry[] = [];
   for (const a of accounts) {
@@ -205,8 +205,8 @@ export function buildFreshEntries(
       unit: detectUnit(a.platform, '', a.type),
     });
     for (const sub of a.subAccounts) {
-      const isDebt = sub.toLowerCase() === 'debt';
-      const epiBalance = isDebt ? epiDebtByPlatform.get(a.platform) : undefined;
+      const isLoan = sub.toLowerCase() === 'loan';
+      const epiBalance = isLoan ? epiLoanByPlatform.get(a.platform) : undefined;
       entries.push({
         platform: a.platform,
         account: sub,
