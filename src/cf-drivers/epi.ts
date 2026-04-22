@@ -25,7 +25,7 @@ function endYM(endTs: number): [number, number] {
 export function createEpiDriver(item: CashFlowItem): ICashFlowDriver {
   const P = Math.abs(item.amount);
   const annualRate = item.rate; // percent
-  const r = annualRate / 100 / 12; // monthly rate
+  const r = annualRate / 12; // monthly rate
   const totalMonths = item.term || 240; // fallback 20yr
 
   const [endY, endM] = item.end ? endYM(item.end) : [2099, 1];
