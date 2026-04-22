@@ -1,40 +1,61 @@
-import { useState, useCallback } from 'react';
-import { useSettingStore, type AppTab } from './settingStore';
+import { useCallback, useEffect, useRef } from 'react';
+import { NavLink, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { useSettingStore } from './settingStore';
 import { usePortfolioData } from './hooks/usePortfolioData';
 import { useCashFlowData } from './hooks/useCashFlowData';
 import UpdatePricesButton from './components/UpdatePricesButton';
-import TreemapChart from './components/TreemapChart';
-import TrendChart from './components/TrendChart';
-import DetailTable from './components/DetailTable';
-import CashFlowChart from './components/CashFlowChart';
-import YearlyCashFlowChart from './components/YearlyCashFlowChart';
-
-const NAV_ITEMS: { key: AppTab; label: string }[] = [
-  { key: 'snapshot', label: 'Snapshot' },
-  { key: 'cashflow', label: 'Cashflow' },
-];
+import SnapshotPage from './pages/SnapshotPage';
+import CashflowPage from './pages/CashflowPage';
+import type { Snapshot, CashFlowItem } from './types';
 
 export type Currency = 'USD' | 'CNY';
 
+const NAV_ITEMS: { to: string; label: string; end?: boolean }[] = [
+  { to: '/', label: 'Snapshot', end: true },
+  { to: '/cashflow', label: 'Cashflow' },
+];
+
+export interface AppPageContext {
+  snapshots: Snapshot[];
+  cnyRate: number;
+  reloadPortfolio: () => void;
+  cfItems: CashFlowItem[];
+  cfPrices: Map<string, number>;
+  rate: number;
+  currency: Currency;
+}
+
+function useRoutePersistence() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const lastPath = useSettingStore((s) => s.lastPath);
+  const setLastPath = useSettingStore((s) => s.setLastPath);
+  const restoredRef = useRef(false);
+
+  // Restore saved path on initial mount (the Lark host always loads the iframe
+  // without a hash, so HashRouter would otherwise reset to `/`).
+  useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+    if (lastPath && lastPath !== location.pathname && location.pathname === '/') {
+      navigate(lastPath, { replace: true });
+    }
+  }, [lastPath, location.pathname, navigate]);
+
+  // Persist the current path on every change.
+  useEffect(() => {
+    if (!restoredRef.current) return;
+    if (location.pathname !== lastPath) setLastPath(location.pathname);
+  }, [location.pathname, lastPath, setLastPath]);
+}
+
 export default function App() {
+  useRoutePersistence();
   const { snapshots, cnyRate, loading, error, reload } = usePortfolioData();
   const { items: cfItems, prices: cfPrices, loading: cfLoading, error: cfError } = useCashFlowData();
-  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const handlePriceUpdateSuccess = useCallback(() => { reload(); }, [reload]);
-  const { displayCurrency, currentTab, currentYear, setDisplayCurrency, setCurrentTab, setCurrentYear } = useSettingStore();
+  const { displayCurrency, setDisplayCurrency } = useSettingStore();
   const currency = displayCurrency as Currency;
-  const page = currentTab;
-  const cfYear = currentYear;
-
-  // Resolve selected index: -1 means latest
-  const resolvedIndex = selectedIndex < 0 || selectedIndex >= snapshots.length
-    ? snapshots.length - 1
-    : selectedIndex;
-  const selected = snapshots.length > 0 ? snapshots[resolvedIndex] : undefined;
-  const prevSelected = resolvedIndex > 0 ? snapshots[resolvedIndex - 1] : undefined;
-  const latest = snapshots.length > 0 ? snapshots[snapshots.length - 1] : undefined;
-  const prev = snapshots.length > 1 ? snapshots[snapshots.length - 2] : undefined;
-
   const rate = currency === 'CNY' ? cnyRate : 1;
 
   const isLoading = loading || cfLoading;
@@ -53,17 +74,28 @@ export default function App() {
     );
   }
 
+  const ctx: AppPageContext = {
+    snapshots,
+    cnyRate,
+    reloadPortfolio: reload,
+    cfItems,
+    cfPrices,
+    rate,
+    currency,
+  };
+
   return (
     <div className="layout">
       <nav className="nav-panel">
         {NAV_ITEMS.map((item) => (
-          <button
-            key={item.key}
-            className={`nav-item ${page === item.key ? 'active' : ''}`}
-            onClick={() => setCurrentTab(item.key as AppTab)}
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.end}
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
           >
             {item.label}
-          </button>
+          </NavLink>
         ))}
         <div className="nav-spacer" />
         <UpdatePricesButton onSuccess={handlePriceUpdateSuccess} />
@@ -80,51 +112,10 @@ export default function App() {
         </div>
       </nav>
       <div className="app">
-        {page === 'snapshot' && (
-          <>
-            <h2 className="section-title">Portfolio</h2>
-            <TreemapChart
-              snapshot={selected}
-              prevSnapshot={prevSelected}
-              rate={rate}
-              date={selected?.date}
-              netWorth={selected ? selected.totalUsd * rate : undefined}
-              prevNetWorth={prevSelected ? prevSelected.totalUsd * rate : undefined}
-            />
-            <h2 className="section-title">Trend</h2>
-            <TrendChart
-              snapshots={snapshots}
-              rate={rate}
-              selectedIndex={resolvedIndex}
-              onSelectIndex={setSelectedIndex}
-            />
-            <h2 className="section-title">Snapshots</h2>
-            <DetailTable
-              snapshots={snapshots}
-              rate={rate}
-              selectedIndex={resolvedIndex}
-              onSelectIndex={setSelectedIndex}
-            />
-          </>
-        )}
-        {page === 'cashflow' && (
-          <>
-            <h2 className="section-title">Cashflow</h2>
-            <CashFlowChart
-              items={cfItems}
-              rate={rate}
-              prices={cfPrices}
-              year={cfYear}
-            />
-            <YearlyCashFlowChart
-              items={cfItems}
-              rate={rate}
-              prices={cfPrices}
-              selectedYear={cfYear}
-              onSelectYear={setCurrentYear}
-            />
-          </>
-        )}
+        <Routes>
+          <Route path="/" element={<SnapshotPage ctx={ctx} />} />
+          <Route path="/cashflow" element={<CashflowPage ctx={ctx} />} />
+        </Routes>
       </div>
     </div>
   );

@@ -3,35 +3,34 @@ import { persist } from "zustand/middleware";
 import { fmtHuman } from "./types";
 
 export type DisplayCurrency = "CNY" | "USD";
-export type AppTab = "snapshot" | "cashflow";
 
 interface SettingState {
   displayCurrency: DisplayCurrency;
-  currentTab: AppTab;
   currentYear: number;
+  lastPath: string;
 
   setDisplayCurrency: (currency: DisplayCurrency) => void;
-  setCurrentTab: (tab: AppTab) => void;
   setCurrentYear: (year: number) => void;
+  setLastPath: (path: string) => void;
 }
 
 export const useSettingStore = create<SettingState>()(
   persist(
     (set) => ({
       displayCurrency: "CNY",
-      currentTab: "snapshot",
       currentYear: new Date().getFullYear(),
+      lastPath: "/",
 
       setDisplayCurrency: (currency) => set({ displayCurrency: currency }),
-      setCurrentTab: (tab) => set({ currentTab: tab }),
       setCurrentYear: (year) => set({ currentYear: year }),
+      setLastPath: (path) => set({ lastPath: path }),
     }),
     {
       name: "base-assets-settings",
       partialize: (state) => ({
         displayCurrency: state.displayCurrency,
-        currentTab: state.currentTab,
         currentYear: state.currentYear,
+        lastPath: state.lastPath,
       }),
     },
   ),

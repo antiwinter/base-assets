@@ -1,26 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { bitable } from '@lark-base-open/js-sdk';
 import type { DataRecord, PriceRecord, Snapshot, SnapshotAccount } from '../types';
-
-function parseSelect(val: unknown): string {
-  if (typeof val === 'string') return val;
-  if (val && typeof val === 'object' && !Array.isArray(val)) {
-    const o = val as Record<string, unknown>;
-    return (o.text ?? o.name ?? '') as string;
-  }
-  if (Array.isArray(val) && val.length > 0) {
-    return val.map((seg: { text?: string }) => seg.text ?? '').join('');
-  }
-  return '';
-}
-
-function parseText(val: unknown): string {
-  if (typeof val === 'string') return val;
-  if (Array.isArray(val) && val.length > 0) {
-    return val.map((seg: { text?: string }) => seg.text ?? '').join('');
-  }
-  return '';
-}
+import { fetchAllRecords, parseSelect } from './larkUtils';
 
 function buildSnapshots(
   data: DataRecord[],
@@ -80,18 +61,6 @@ function buildSnapshots(
 
   snapshots.sort((a, b) => a.date - b.date);
   return snapshots;
-}
-
-async function fetchAllRecords(table: Awaited<ReturnType<typeof bitable.base.getTable>>) {
-  const all: Array<{ fields: Record<string, unknown> }> = [];
-  let pageToken: string | undefined;
-  while (true) {
-    const resp = await table.getRecords({ pageSize: 5000, pageToken });
-    all.push(...resp.records);
-    if (!resp.hasMore) break;
-    pageToken = resp.pageToken;
-  }
-  return all;
 }
 
 export function usePortfolioData() {
