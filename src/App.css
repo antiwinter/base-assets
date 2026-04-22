@@ -59,8 +59,10 @@ body {
 }
 
 .nav-panel .currency-switch {
-  margin: 0 16px;
+  margin: 0 16px 16px;
 }
+
+
 
 .app {
   flex: 1;

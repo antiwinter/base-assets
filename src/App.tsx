@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useSettingStore, type AppTab } from './settingStore';
 import { usePortfolioData } from './hooks/usePortfolioData';
 import { useCashFlowData } from './hooks/useCashFlowData';
+import UpdatePricesButton from './components/UpdatePricesButton';
 import TreemapChart from './components/TreemapChart';
 import TrendChart from './components/TrendChart';
 import DetailTable from './components/DetailTable';
@@ -19,6 +20,7 @@ export default function App() {
   const { snapshots, cnyRate, loading, error, reload } = usePortfolioData();
   const { items: cfItems, prices: cfPrices, loading: cfLoading, error: cfError } = useCashFlowData();
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
+  const handlePriceUpdateSuccess = useCallback(() => { reload(); }, [reload]);
   const { displayCurrency, currentTab, currentYear, setDisplayCurrency, setCurrentTab, setCurrentYear } = useSettingStore();
   const currency = displayCurrency as Currency;
   const page = currentTab;
@@ -64,6 +66,7 @@ export default function App() {
           </button>
         ))}
         <div className="nav-spacer" />
+        <UpdatePricesButton onSuccess={handlePriceUpdateSuccess} />
         <div className="currency-switch">
           {(['USD', 'CNY'] as Currency[]).map((c) => (
             <button
