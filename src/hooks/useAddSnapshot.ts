@@ -5,7 +5,14 @@ import {
   type IOpenSingleSelect,
   type IRecordValue,
 } from '@lark-base-open/js-sdk';
-import { loadEditorMeta, buildFreshEntries, todayDayMs } from './snapshotEntries';
+import {
+  loadEditorMeta,
+  buildFreshEntries,
+  todayDayMs,
+  existingKey,
+  type SnapshotEntry,
+  type ExistingEntry,
+} from './snapshotEntries';
 
 /**
  * Resolve a single-select field: load its options, then for any input value not
@@ -34,6 +41,37 @@ async function ensureOptions(
   return byName;
 }
 
+interface PendingUpdate {
+  recordId: string;
+  newBalance: number;
+}
+
+/**
+ * Decide what to do with each fresh entry given the existing data rows for the
+ * same date:
+ *   - no existing row              → insert
+ *   - existing balance == 0 and    → update (refresh default, e.g. EPI principal)
+ *     entry.balance != 0
+ *   - otherwise                     → skip
+ */
+function partition(
+  entries: SnapshotEntry[],
+  date: number,
+  existingByKey: Map<string, ExistingEntry>,
+): { toInsert: SnapshotEntry[]; toUpdate: PendingUpdate[] } {
+  const toInsert: SnapshotEntry[] = [];
+  const toUpdate: PendingUpdate[] = [];
+  for (const e of entries) {
+    const existing = existingByKey.get(existingKey(date, e.platform, e.account));
+    if (!existing) {
+      toInsert.push(e);
+    } else if (existing.balance === 0 && e.balance !== 0) {
+      toUpdate.push({ recordId: existing.recordId, newBalance: e.balance });
+    }
+  }
+  return { toInsert, toUpdate };
+}
+
 export function useAddSnapshot(onSuccess?: () => void) {
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,14 +81,24 @@ export function useAddSnapshot(onSuccess?: () => void) {
       setAdding(true);
       setError(null);
 
-      const { accounts, detectUnit } = await loadEditorMeta();
+      const { accounts, detectUnit, epiDebtByPlatform, existingByKey: existingMap } =
+        await loadEditorMeta();
       if (accounts.length === 0) throw new Error('No accounts found in the accounts table.');
 
       const date = todayDayMs();
-      const entries = buildFreshEntries(accounts, detectUnit);
+      const entries = buildFreshEntries(accounts, detectUnit, epiDebtByPlatform);
+      const { toInsert, toUpdate } = partition(entries, date, existingMap);
 
+      if (toInsert.length === 0 && toUpdate.length === 0) {
+        window.alert(
+          `No changes for ${new Date(date).toLocaleDateString()} — every account already has a non-zero entry.`,
+        );
+        return;
+      }
+
+      const dateLabel = new Date(date).toLocaleDateString();
       const ok = window.confirm(
-        `Add ${entries.length} entries dated ${new Date(date).toLocaleDateString()} to the data table?`,
+        `For ${dateLabel}: insert ${toInsert.length} new entries and update ${toUpdate.length} default values. Continue?`,
       );
       if (!ok) return;
 
@@ -68,40 +116,52 @@ export function useAddSnapshot(onSuccess?: () => void) {
         throw new Error('Could not resolve required fields on data table (date/platform/balance/unit).');
       }
 
-      // Single-select fields require IOpenSingleSelect ({id, text}) values, so
-      // resolve each option name to its id (creating new options on the fly if
-      // the value doesn't already exist as an option).
-      const platformField = await dataTable.getFieldById<ISingleSelectField>(platformFieldId);
-      const unitField = await dataTable.getFieldById<ISingleSelectField>(unitFieldId);
-      const accountField = accountFieldId
-        ? await dataTable.getFieldById<ISingleSelectField>(accountFieldId)
-        : null;
+      // ---- Inserts ----
+      if (toInsert.length > 0) {
+        // Single-select fields require IOpenSingleSelect ({id, text}) values, so
+        // resolve each option name to its id (creating new options on the fly if
+        // the value doesn't already exist as an option).
+        const platformField = await dataTable.getFieldById<ISingleSelectField>(platformFieldId);
+        const unitField = await dataTable.getFieldById<ISingleSelectField>(unitFieldId);
+        const accountField = accountFieldId
+          ? await dataTable.getFieldById<ISingleSelectField>(accountFieldId)
+          : null;
 
-      const [platformOptions, unitOptions, accountOptions] = await Promise.all([
-        ensureOptions(platformField, entries.map((e) => e.platform)),
-        ensureOptions(unitField, entries.map((e) => e.unit)),
-        accountField
-          ? ensureOptions(accountField, entries.map((e) => e.account).filter(Boolean))
-          : Promise.resolve(new Map<string, IOpenSingleSelect>()),
-      ]);
+        const [platformOptions, unitOptions, accountOptions] = await Promise.all([
+          ensureOptions(platformField, toInsert.map((e) => e.platform)),
+          ensureOptions(unitField, toInsert.map((e) => e.unit)),
+          accountField
+            ? ensureOptions(accountField, toInsert.map((e) => e.account).filter(Boolean))
+            : Promise.resolve(new Map<string, IOpenSingleSelect>()),
+        ]);
 
-      const rows: IRecordValue[] = entries.map((e) => {
-        const fields: Record<string, unknown> = {
-          [dateFieldId]: date,
-          [balanceFieldId]: e.balance,
-        };
-        const platformOpt = platformOptions.get(e.platform);
-        if (platformOpt) fields[platformFieldId] = platformOpt;
-        const unitOpt = unitOptions.get(e.unit);
-        if (unitOpt) fields[unitFieldId] = unitOpt;
-        if (accountField && e.account) {
-          const accOpt = accountOptions.get(e.account);
-          if (accOpt) fields[accountFieldId] = accOpt;
-        }
-        return { fields } as IRecordValue;
-      });
+        const rows: IRecordValue[] = toInsert.map((e) => {
+          const fields: Record<string, unknown> = {
+            [dateFieldId]: date,
+            [balanceFieldId]: e.balance,
+          };
+          const platformOpt = platformOptions.get(e.platform);
+          if (platformOpt) fields[platformFieldId] = platformOpt;
+          const unitOpt = unitOptions.get(e.unit);
+          if (unitOpt) fields[unitFieldId] = unitOpt;
+          if (accountField && e.account) {
+            const accOpt = accountOptions.get(e.account);
+            if (accOpt) fields[accountFieldId] = accOpt;
+          }
+          return { fields } as IRecordValue;
+        });
 
-      await dataTable.addRecords(rows);
+        await dataTable.addRecords(rows);
+      }
+
+      // ---- Updates (only the balance field) ----
+      if (toUpdate.length > 0) {
+        const updates = toUpdate.map((u) => ({
+          recordId: u.recordId,
+          fields: { [balanceFieldId]: u.newBalance } as Record<string, unknown>,
+        }));
+        await dataTable.setRecords(updates as unknown as Parameters<typeof dataTable.setRecords>[0]);
+      }
 
       try {
         await bitable.ui.switchToTable(dataTable.id);

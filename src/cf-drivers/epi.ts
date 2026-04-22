@@ -62,3 +62,37 @@ export function createEpiDriver(item: CashFlowItem): ICashFlowDriver {
     },
   };
 }
+
+/**
+ * Remaining principal of an EPI loan as of `asOf` (ms timestamp).
+ * Returns a positive number; the caller decides on sign (debt → negate).
+ *
+ * Mirrors the conventions used by `createEpiDriver` so the math stays
+ * consistent across the app (notably `r = item.rate / 12`).
+ */
+export function epiRemainingPrincipal(item: CashFlowItem, asOf: number): number {
+  const n = item.term;
+  if (!item.end || !n || n <= 0) return 0;
+  const P = Math.abs(item.amount);
+  const r = item.rate / 12;
+
+  const [endY, endM] = endYM(item.end);
+  const startTotalMonths = endY * 12 + endM - n;
+  const startY = Math.floor(startTotalMonths / 12);
+  const startM = startTotalMonths % 12 || 12;
+
+  const a = new Date(asOf);
+  const aY = a.getFullYear();
+  const aM = a.getMonth() + 1;
+  const elapsed = Math.max(0, monthsBetween(startY, startM, aY, aM));
+  const remaining = Math.max(0, n - elapsed);
+  if (remaining <= 0) return 0;
+  if (remaining >= n) return P;
+
+  if (r > 0) {
+    const rn = Math.pow(1 + r, n);
+    const pmt = P * r * rn / (rn - 1);
+    return pmt * (1 - Math.pow(1 + r, -remaining)) / r;
+  }
+  return P * remaining / n;
+}
