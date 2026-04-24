@@ -65,14 +65,16 @@ export default function YearlyCashFlowChart({ items, rate, prices, selectedYear,
 
       for (let m = 1; m <= 12; m++) {
         for (const driver of drivers) {
-          const raw = driver.getMonthValue(y, m);
-          const value = Math.round(raw * driver.convRate);
-          if (value > 0) {
-            income += value;
-            incomeByDriver.set(driver.itemName, (incomeByDriver.get(driver.itemName) ?? 0) + value);
-          } else if (value < 0) {
-            expense += value;
-            expenseByDriver.set(driver.itemName, (expenseByDriver.get(driver.itemName) ?? 0) + value);
+          const breakdown = driver.getMonthBreakdown(y, m);
+          for (const [name, raw] of Object.entries(breakdown)) {
+            const value = Math.round(raw * driver.convRate);
+            if (value > 0) {
+              income += value;
+              incomeByDriver.set(name, (incomeByDriver.get(name) ?? 0) + value);
+            } else if (value < 0) {
+              expense += value;
+              expenseByDriver.set(name, (expenseByDriver.get(name) ?? 0) + value);
+            }
           }
         }
       }

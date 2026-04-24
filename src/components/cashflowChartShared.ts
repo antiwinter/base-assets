@@ -20,8 +20,7 @@ export interface Top3Buckets {
 }
 
 export interface DriverWithRate {
-  itemName: string;
-  getMonthValue: (year: number, month: number) => number;
+  getMonthBreakdown: (year: number, month: number) => Record<string, number>;
   convRate: number;
 }
 
@@ -39,8 +38,7 @@ export function buildDriversWithRates(
     const driver = createDriver(item);
 
     return {
-      itemName: driver.item.item,
-      getMonthValue: driver.getMonthValue.bind(driver),
+      getMonthBreakdown: driver.getMonthBreakdown.bind(driver),
       convRate,
     };
   });

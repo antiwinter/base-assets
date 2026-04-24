@@ -17,7 +17,9 @@ import type { ICashFlowDriver } from './driver';
  *     cumulative_tax     = cumulative_taxable × bracket_rate − quick_deduction
  *     this_month_tax     = cumulative_tax − previous_cumulative_tax
  *
- * Returns net take-home (positive) each month. Amount varies as brackets escalate.
+ * Emits three lines (keys from `item` name, lowercased): base net, `{base}-fund`
+ * (monthly employer contribution line, ¥3730), `{base}-bonus` in February only
+ * (bonus = gross × 0.7). Past `end` → no lines.
  */
 
 // Progressive tax brackets (annual cumulative taxable income thresholds)
@@ -49,32 +51,46 @@ function calcSocialInsurance(gross: number): number {
   return gross * 0.225 + 3;
 }
 
+/** Monthly fund line (was a separate cfi row). */
+const FUND_MONTHLY = 3730;
+
 export function createSalaryDriver(item: CashFlowItem): ICashFlowDriver {
   const gross = item.amount; // positive
+  const grossAbs = Math.abs(gross);
   const endTs = item.end;
   const endDate = endTs ? new Date(endTs) : null;
   const endY = endDate ? endDate.getFullYear() : Infinity;
   const endM = endDate ? endDate.getMonth() + 1 : Infinity;
 
-  const socialInsurance = calcSocialInsurance(Math.abs(gross));
-  const monthlyTaxable = Math.abs(gross) - socialInsurance - 5000;
+  const socialInsurance = calcSocialInsurance(grossAbs);
+  const monthlyTaxable = grossAbs - socialInsurance - 5000;
+  const emitBase = item.item.trim().toLowerCase();
+
+  function netTakeHome(year: number, month: number): number {
+    if (year > endY || (year === endY && month > endM)) return 0;
+    const cumulativeTaxable = month * monthlyTaxable;
+    const cumulativeTax = calcCumulativeTax(cumulativeTaxable);
+    const prevCumulativeTax = month > 1
+      ? calcCumulativeTax((month - 1) * monthlyTaxable)
+      : 0;
+    const thisMonthTax = Math.max(0, cumulativeTax - prevCumulativeTax);
+    return grossAbs - socialInsurance - thisMonthTax;
+  }
 
   return {
     item,
-    getMonthValue(year: number, month: number): number {
-      // Past end date → 0
-      if (year > endY || (year === endY && month > endM)) return 0;
+    getMonthBreakdown(year: number, month: number): Record<string, number> {
+      if (year > endY || (year === endY && month > endM)) return {};
 
-      // month is 1-based within the calendar year
-      // Cumulative withholding resets every January
-      const cumulativeTaxable = month * monthlyTaxable;
-      const cumulativeTax = calcCumulativeTax(cumulativeTaxable);
-      const prevCumulativeTax = month > 1
-        ? calcCumulativeTax((month - 1) * monthlyTaxable)
-        : 0;
-      const thisMonthTax = Math.max(0, cumulativeTax - prevCumulativeTax);
-
-      return Math.abs(gross) - socialInsurance - thisMonthTax;
+      const out: Record<string, number> = {};
+      const net = netTakeHome(year, month);
+      if (net !== 0) out[emitBase] = net;
+      out[`${emitBase}-fund`] = FUND_MONTHLY;
+      if (month === 2) {
+        const bonus = grossAbs * 0.7;
+        if (bonus !== 0) out[`${emitBase}-bonus`] = bonus;
+      }
+      return out;
     },
     getSpentMonths(): number {
       if (!endDate) return Infinity;
@@ -83,7 +99,9 @@ export function createSalaryDriver(item: CashFlowItem): ICashFlowDriver {
     },
     getYearValue(year: number): number {
       let sum = 0;
-      for (let m = 1; m <= 12; m++) sum += this.getMonthValue(year, m);
+      for (let m = 1; m <= 12; m++) {
+        for (const v of Object.values(this.getMonthBreakdown(year, m))) sum += v;
+      }
       return sum;
     },
   };

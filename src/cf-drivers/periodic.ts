@@ -9,11 +9,14 @@ export function createMonthlyDriver(item: CashFlowItem): ICashFlowDriver {
   const endY = endDate ? endDate.getFullYear() : Infinity;
   const endM = endDate ? endDate.getMonth() + 1 : Infinity;
 
+  const emitKey = item.item.trim();
+
   return {
     item,
-    getMonthValue(year: number, month: number): number {
-      if (year > endY || (year === endY && month > endM)) return 0;
-      return item.amount;
+    getMonthBreakdown(year: number, month: number): Record<string, number> {
+      if (year > endY || (year === endY && month > endM)) return {};
+      const v = item.amount;
+      return v === 0 ? {} : { [emitKey]: v };
     },
     getSpentMonths(): number {
       if (!endDate) return Infinity;
@@ -21,7 +24,9 @@ export function createMonthlyDriver(item: CashFlowItem): ICashFlowDriver {
     },
     getYearValue(year: number): number {
       let sum = 0;
-      for (let m = 1; m <= 12; m++) sum += this.getMonthValue(year, m);
+      for (let m = 1; m <= 12; m++) {
+        for (const v of Object.values(this.getMonthBreakdown(year, m))) sum += v;
+      }
       return sum;
     },
   };
@@ -39,12 +44,15 @@ export function createYearlyDriver(item: CashFlowItem): ICashFlowDriver {
   const endM = endDate ? endDate.getMonth() + 1 : Infinity;
   const renewalMonth = endDate ? endDate.getMonth() + 1 : 1;
 
+  const emitKey = item.item.trim();
+
   return {
     item,
-    getMonthValue(year: number, month: number): number {
-      if (year > endY || (year === endY && month > endM)) return 0;
-      if (month !== renewalMonth) return 0;
-      return item.amount;
+    getMonthBreakdown(year: number, month: number): Record<string, number> {
+      if (year > endY || (year === endY && month > endM)) return {};
+      if (month !== renewalMonth) return {};
+      const v = item.amount;
+      return v === 0 ? {} : { [emitKey]: v };
     },
     getSpentMonths(): number {
       if (!endDate) return Infinity;
@@ -52,7 +60,9 @@ export function createYearlyDriver(item: CashFlowItem): ICashFlowDriver {
     },
     getYearValue(year: number): number {
       let sum = 0;
-      for (let m = 1; m <= 12; m++) sum += this.getMonthValue(year, m);
+      for (let m = 1; m <= 12; m++) {
+        for (const v of Object.values(this.getMonthBreakdown(year, m))) sum += v;
+      }
       return sum;
     },
   };

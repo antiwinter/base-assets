@@ -60,20 +60,24 @@ export function createEpiDriver(item: CashFlowItem): ICashFlowDriver {
     pmt = P / totalMonths; // 0% interest
   }
 
+  const emitKey = item.item.trim();
+
   return {
     item,
-    getMonthValue(year: number, month: number): number {
-      // Before start or after end → 0
+    getMonthBreakdown(year: number, month: number): Record<string, number> {
       const mIdx = monthsBetween(startY, startM, year, month);
-      if (mIdx < 0 || mIdx >= totalMonths) return 0;
-      return -pmt; // outflow
+      if (mIdx < 0 || mIdx >= totalMonths) return {};
+      const v = -pmt; // outflow
+      return v === 0 ? {} : { [emitKey]: v };
     },
     getSpentMonths(): number {
       return totalMonths;
     },
     getYearValue(year: number): number {
       let sum = 0;
-      for (let m = 1; m <= 12; m++) sum += this.getMonthValue(year, m);
+      for (let m = 1; m <= 12; m++) {
+        for (const v of Object.values(this.getMonthBreakdown(year, m))) sum += v;
+      }
       return sum;
     },
   };

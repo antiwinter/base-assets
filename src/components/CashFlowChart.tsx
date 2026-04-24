@@ -60,17 +60,19 @@ export default function CashFlowChart({ items, rate, prices, year }: Props) {
       const expenseItems: { name: string; value: number }[] = [];
 
       for (const driver of drivers) {
-        const raw = driver.getMonthValue(year, m);
-        const value = Math.round(raw * driver.convRate);
-        if (value > 0) {
-          income += value;
-          incomeItems.push({ name: driver.itemName, value });
-        } else if (value < 0) {
-          expense += value;
-          expenseItems.push({ name: driver.itemName, value });
-        }
-        if (value !== 0) {
-          details.push({ name: driver.itemName, value });
+        const breakdown = driver.getMonthBreakdown(year, m);
+        for (const [name, raw] of Object.entries(breakdown)) {
+          const value = Math.round(raw * driver.convRate);
+          if (value > 0) {
+            income += value;
+            incomeItems.push({ name, value });
+          } else if (value < 0) {
+            expense += value;
+            expenseItems.push({ name, value });
+          }
+          if (value !== 0) {
+            details.push({ name, value });
+          }
         }
       }
 
