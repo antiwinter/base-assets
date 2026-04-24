@@ -83,9 +83,10 @@ export function usePortfolioData() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (opts?: { silent?: boolean }) => {
+    const silent = opts?.silent ?? false;
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
 
       // Get tables by name
@@ -194,13 +195,17 @@ export function usePortfolioData() {
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    load();
+  const reloadSilent = useCallback(() => {
+    void load({ silent: true });
   }, [load]);
 
-  return { snapshots, cnyRate, loading, error, reload: load };
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  return { snapshots, cnyRate, loading, error, reload: load, reloadSilent };
 }

@@ -3,6 +3,7 @@ import { NavLink, Routes, Route, useLocation, useNavigate } from 'react-router-d
 import { useSettingStore } from './settingStore';
 import { usePortfolioData } from './hooks/usePortfolioData';
 import { useCashFlowData } from './hooks/useCashFlowData';
+import { useBitableBaseAutoRefresh } from './hooks/useBitableBaseAutoRefresh';
 import UpdatePricesButton from './components/UpdatePricesButton';
 import SnapshotPage from './pages/SnapshotPage';
 import CashflowPage from './pages/CashflowPage';
@@ -51,9 +52,26 @@ function useRoutePersistence() {
 
 export default function App() {
   useRoutePersistence();
-  const { snapshots, cnyRate, loading, error, reload } = usePortfolioData();
-  const { items: cfItems, prices: cfPrices, loading: cfLoading, error: cfError } = useCashFlowData();
-  const handlePriceUpdateSuccess = useCallback(() => { reload(); }, [reload]);
+  const { snapshots, cnyRate, loading, error, reload, reloadSilent: reloadSnapshotSilent } =
+    usePortfolioData();
+  const {
+    items: cfItems,
+    prices: cfPrices,
+    loading: cfLoading,
+    error: cfError,
+    reload: reloadCashflow,
+    reloadSilent: reloadCashflowSilent,
+  } = useCashFlowData();
+
+  useBitableBaseAutoRefresh({
+    reloadSnapshot: reloadSnapshotSilent,
+    reloadCashflow: reloadCashflowSilent,
+  });
+
+  const handlePriceUpdateSuccess = useCallback(() => {
+    void reload();
+    void reloadCashflow();
+  }, [reload, reloadCashflow]);
   const { displayCurrency, setDisplayCurrency } = useSettingStore();
   const currency = displayCurrency as Currency;
   const rate = currency === 'CNY' ? cnyRate : 1;
@@ -69,7 +87,15 @@ export default function App() {
     return (
       <div className="error">
         <p>Error: {anyError}</p>
-        <button onClick={reload}>Retry</button>
+        <button
+          type="button"
+          onClick={() => {
+            void reload();
+            void reloadCashflow();
+          }}
+        >
+          Retry
+        </button>
       </div>
     );
   }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { bitable } from '@lark-base-open/js-sdk';
 import type { CashFlowItem, CashFlowDriverType } from '../types';
+import { fetchAllRecords } from './larkUtils';
 
 function parseSelect(val: unknown): string {
   if (typeof val === 'string') return val;
@@ -31,18 +32,6 @@ function parseDate(val: unknown): number | null {
   return null;
 }
 
-async function fetchAllRecords(table: Awaited<ReturnType<typeof bitable.base.getTable>>) {
-  const all: Array<{ fields: Record<string, unknown> }> = [];
-  let pageToken: string | undefined;
-  while (true) {
-    const resp = await table.getRecords({ pageSize: 5000, pageToken });
-    all.push(...resp.records);
-    if (!resp.hasMore) break;
-    pageToken = resp.pageToken;
-  }
-  return all;
-}
-
 const VALID_DRIVERS = new Set<string>(['EPI', 'Salary', 'Monthly', 'Yearly']);
 
 export function useCashFlowData() {
@@ -51,9 +40,10 @@ export function useCashFlowData() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (opts?: { silent?: boolean }) => {
+    const silent = opts?.silent ?? false;
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
 
       const cfiTable = await bitable.base.getTable('cfi');
@@ -114,13 +104,17 @@ export function useCashFlowData() {
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    load();
+  const reloadSilent = useCallback(() => {
+    void load({ silent: true });
   }, [load]);
 
-  return { items, prices, loading, error, reload: load };
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  return { items, prices, loading, error, reload: load, reloadSilent };
 }
