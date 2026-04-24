@@ -50,7 +50,7 @@ interface PendingUpdate {
  * Decide what to do with each fresh entry given the existing data rows for the
  * same date:
  *   - no existing row              → insert
- *   - existing balance == 0 and    → update (refresh default, e.g. EPI principal)
+ *   - existing balance == 0 and    → update (refresh default zero rows)
  *     entry.balance != 0
  *   - otherwise                     → skip
  */
@@ -81,12 +81,11 @@ export function useAddSnapshot(onSuccess?: () => void) {
       setAdding(true);
       setError(null);
 
-      const { accounts, detectUnit, epiLoanByPlatform, existingByKey: existingMap } =
-        await loadEditorMeta();
+      const { accounts, detectUnit, existingByKey: existingMap } = await loadEditorMeta();
       if (accounts.length === 0) throw new Error('No accounts found in the accounts table.');
 
       const date = todayDayMs();
-      const entries = buildFreshEntries(accounts, detectUnit, epiLoanByPlatform);
+      const entries = buildFreshEntries(accounts, detectUnit);
       const { toInsert, toUpdate } = partition(entries, date, existingMap);
 
       if (toInsert.length === 0 && toUpdate.length === 0) {

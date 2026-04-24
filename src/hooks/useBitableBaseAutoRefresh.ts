@@ -13,7 +13,7 @@ const TABLE_RECORD_EVENTS = [
 type BitableTable = Awaited<ReturnType<typeof bitable.base.getTable>>;
 
 /** Tables whose rows feed the snapshot view (data + prices + platform types). */
-export const SNAPSHOT_REFRESH_TABLES = ['accounts', 'prices', 'data'] as const;
+export const SNAPSHOT_REFRESH_TABLES = ['accounts', 'prices', 'data', 'cfi'] as const;
 
 /** Tables whose rows feed cashflow charts (cfi + prices; accounts for shared pricing / future use). */
 export const CASHFLOW_REFRESH_TABLES = ['accounts', 'prices', 'cfi'] as const;

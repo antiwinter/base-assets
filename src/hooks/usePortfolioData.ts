@@ -1,40 +1,56 @@
 import { useState, useEffect, useCallback } from 'react';
 import { bitable } from '@lark-base-open/js-sdk';
-import type { AssetCategory, DataRecord, PriceRecord, Snapshot, SnapshotAccount } from '../types';
+import type { CashFlowItem, DataRecord, PriceRecord, Snapshot, SnapshotAccount } from '../types';
 import { fetchAllRecords, parseSelect } from './larkUtils';
+import { categorizeAccount } from './portfolioUtils';
+import { epiLoanSnapshotAccountsForDate, parseEpiCashFlowItems } from './snapshotEntries';
 
-/**
- * Categorise an account row. Precedence (top wins):
- *   1. account is `debt` or `loan`             → debt
- *   2. account is `stock` or unit looks like a → stock
- *      stock symbol (contains '/', e.g. NASDAQ/ICG)
- *   3. unit starts with '$' (e.g. $BTC) or     → digital
- *      platform.type === 'ex'
- *   4. platform.type === 'fixed'               → fixed
- *   5. otherwise                               → fiat
- */
-function categorize(account: string, unit: string, platformType: string): AssetCategory {
-  const a = account.trim().toLowerCase();
-  const u = unit.trim();
-  const t = platformType.trim().toLowerCase();
-  if (a === 'debt' || a === 'loan') return 'debt';
-  if (a === 'stock' || u.includes('/')) return 'stock';
-  if (u.startsWith('$') || t === 'ex') return 'digital';
-  if (t === 'fixed') return 'fixed';
-  return 'fiat';
+function snapshotAccountFromDataRecord(
+  r: DataRecord,
+  priceMap: Map<string, number>,
+  platformTypeMap: Map<string, string>,
+): SnapshotAccount {
+  const price = priceMap.get(r.unit) ?? 0;
+  const valueUsd = r.balance * price;
+  const platformType = platformTypeMap.get(r.platform) ?? '';
+  const category = categorizeAccount(r.account, r.unit, platformType);
+  return { platform: r.platform, account: r.account, balance: r.balance, unit: r.unit, valueUsd, category };
+}
+
+function sumSnapshotTotals(accounts: SnapshotAccount[]): Pick<
+  Snapshot,
+  'totalUsd' | 'fiatUsd' | 'digitalUsd' | 'stockUsd' | 'fixedUsd' | 'debtUsd'
+> {
+  let totalUsd = 0;
+  let fiatUsd = 0;
+  let digitalUsd = 0;
+  let stockUsd = 0;
+  let fixedUsd = 0;
+  let debtUsd = 0;
+  for (const a of accounts) {
+    totalUsd += a.valueUsd;
+    switch (a.category) {
+      case 'debt':    debtUsd    += a.valueUsd; break;
+      case 'stock':   stockUsd   += a.valueUsd; break;
+      case 'digital': digitalUsd += a.valueUsd; break;
+      case 'fixed':   fixedUsd   += a.valueUsd; break;
+      case 'fiat':    fiatUsd    += a.valueUsd; break;
+    }
+  }
+  return { totalUsd, fiatUsd, digitalUsd, stockUsd, fixedUsd, debtUsd };
 }
 
 function buildSnapshots(
   data: DataRecord[],
   prices: PriceRecord[],
   platformTypeMap: Map<string, string>,
+  epiItems: CashFlowItem[],
 ): Snapshot[] {
   const priceMap = new Map<string, number>();
   for (const p of prices) {
     priceMap.set(p.symbol, p.price);
   }
 
-  // Group by date
   const grouped = new Map<number, DataRecord[]>();
   for (const r of data) {
     const existing = grouped.get(r.date);
@@ -44,33 +60,11 @@ function buildSnapshots(
 
   const snapshots: Snapshot[] = [];
   for (const [date, records] of grouped) {
-    let totalUsd = 0;
-    let fiatUsd = 0;
-    let digitalUsd = 0;
-    let stockUsd = 0;
-    let fixedUsd = 0;
-    let debtUsd = 0;
-
-    const accounts: SnapshotAccount[] = records.map((r) => {
-      const price = priceMap.get(r.unit) ?? 0;
-      const valueUsd = r.balance * price;
-      totalUsd += valueUsd;
-
-      const platformType = platformTypeMap.get(r.platform) ?? '';
-      const category = categorize(r.account, r.unit, platformType);
-
-      switch (category) {
-        case 'debt':    debtUsd    += valueUsd; break;
-        case 'stock':   stockUsd   += valueUsd; break;
-        case 'digital': digitalUsd += valueUsd; break;
-        case 'fixed':   fixedUsd   += valueUsd; break;
-        case 'fiat':    fiatUsd    += valueUsd; break;
-      }
-
-      return { platform: r.platform, account: r.account, balance: r.balance, unit: r.unit, valueUsd, category };
-    });
-
-    snapshots.push({ date, accounts, totalUsd, fiatUsd, digitalUsd, stockUsd, fixedUsd, debtUsd });
+    const fromData = records.map((r) => snapshotAccountFromDataRecord(r, priceMap, platformTypeMap));
+    const fromEpi = epiLoanSnapshotAccountsForDate(epiItems, date, priceMap, platformTypeMap);
+    const accounts = [...fromData, ...fromEpi];
+    const totals = sumSnapshotTotals(accounts);
+    snapshots.push({ date, accounts, ...totals });
   }
 
   snapshots.sort((a, b) => a.date - b.date);
@@ -191,7 +185,13 @@ export function usePortfolioData() {
         setCnyRate(1 / cnyPrice.price);
       }
 
-      setSnapshots(buildSnapshots(data, prices, platformTypeMap));
+      const cfiTable = await bitable.base.getTable('cfi');
+      const cfiFields = await cfiTable.getFieldMetaList();
+      const cfiFieldMap = new Map(cfiFields.map((f) => [f.name, f.id]));
+      const cfiRecords = await fetchAllRecords(cfiTable);
+      const epiItems = parseEpiCashFlowItems(cfiRecords, cfiFieldMap);
+
+      setSnapshots(buildSnapshots(data, prices, platformTypeMap, epiItems));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
