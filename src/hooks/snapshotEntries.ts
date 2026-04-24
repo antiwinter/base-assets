@@ -1,6 +1,7 @@
 import { bitable } from '@lark-base-open/js-sdk';
 import { fetchAllRecords, parseSelect, parseMultiSelect, parseDate } from './larkUtils';
 import { epiRemainingPrincipal } from '../cf-drivers/epi';
+import { epiTermMonthsFromStartEnd } from '../cf-drivers/scheduleUtils';
 import { categorizeAccount } from './portfolioUtils';
 import type { CashFlowItem, SnapshotAccount } from '../types';
 
@@ -50,7 +51,7 @@ export function todayDayMs(): number {
 }
 
 /**
- * Parse `cfi` table records into EPI `CashFlowItem`s (valid end/term and platform).
+ * Parse `cfi` table records into EPI `CashFlowItem`s (valid start/end, computed term, platform).
  */
 export function parseEpiCashFlowItems(
   records: Array<{ fields: Record<string, unknown> }>,
@@ -59,8 +60,8 @@ export function parseEpiCashFlowItems(
   const driverFieldId = fieldMap.get('driver') ?? '';
   const amountFieldId = fieldMap.get('amount') ?? '';
   const rateFieldId = fieldMap.get('rate') ?? '';
+  const startFieldId = fieldMap.get('start') ?? fieldMap.get('Start') ?? '';
   const endFieldId = fieldMap.get('end') ?? '';
-  const termFieldId = fieldMap.get('term') ?? '';
   const accountsFieldId = fieldMap.get('accounts') ?? '';
   const itemFieldId = fieldMap.get('item') ?? '';
   const unitFieldId = fieldMap.get('unit') ?? '';
@@ -75,11 +76,15 @@ export function parseEpiCashFlowItems(
     const platform = parseSelect(rec.fields[accountsFieldId]);
     if (!platform) continue;
 
+    const start = startFieldId ? parseDate(rec.fields[startFieldId]) : null;
+    const end = parseDate(rec.fields[endFieldId]);
+    if (start == null || end == null) continue;
+
+    const term = epiTermMonthsFromStartEnd(start, end);
+    if (term <= 0) continue;
+
     const amount = typeof rec.fields[amountFieldId] === 'number' ? rec.fields[amountFieldId] as number : 0;
     const rate = typeof rec.fields[rateFieldId] === 'number' ? rec.fields[rateFieldId] as number : 0;
-    const term = typeof rec.fields[termFieldId] === 'number' ? rec.fields[termFieldId] as number : 0;
-    const end = parseDate(rec.fields[endFieldId]);
-    if (!end || !term) continue;
 
     out.push({
       item: itemFieldId ? parseSelect(rec.fields[itemFieldId]) : '',
@@ -87,6 +92,7 @@ export function parseEpiCashFlowItems(
       amount,
       unit: unitFieldId ? parseSelect(rec.fields[unitFieldId]) : '',
       rate,
+      start,
       end,
       term,
       accounts: platform,

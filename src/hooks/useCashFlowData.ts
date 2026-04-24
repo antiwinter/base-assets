@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { bitable } from '@lark-base-open/js-sdk';
 import type { CashFlowItem, CashFlowDriverType } from '../types';
+import { epiTermMonthsFromStartEnd } from '../cf-drivers/scheduleUtils';
 import { fetchAllRecords } from './larkUtils';
 
 function parseSelect(val: unknown): string {
@@ -60,6 +61,7 @@ export function useCashFlowData() {
       const amountFieldId = fieldMap.get('amount') ?? '';
       const unitFieldId = fieldMap.get('unit') ?? '';
       const rateFieldId = fieldMap.get('rate') ?? '';
+      const startFieldId = fieldMap.get('start') ?? fieldMap.get('Start') ?? '';
       const endFieldId = fieldMap.get('end') ?? '';
       const termFieldId = fieldMap.get('term') ?? '';
       const accountsFieldId = fieldMap.get('accounts') ?? '';
@@ -79,14 +81,25 @@ export function useCashFlowData() {
         const driverRaw = parseSelect(rec.fields[driverFieldId]);
         if (!VALID_DRIVERS.has(driverRaw)) continue;
 
+        const start = startFieldId ? parseDate(rec.fields[startFieldId]) : null;
+        const end = parseDate(rec.fields[endFieldId]);
+        let term = typeof rec.fields[termFieldId] === 'number' ? rec.fields[termFieldId] as number : 0;
+
+        if (driverRaw === 'EPI') {
+          if (start == null || end == null) continue;
+          term = epiTermMonthsFromStartEnd(start, end);
+          if (term <= 0) continue;
+        }
+
         parsed.push({
           item: parseText(rec.fields[itemFieldId]),
           driver: driverRaw as CashFlowDriverType,
           amount: typeof rec.fields[amountFieldId] === 'number' ? rec.fields[amountFieldId] : 0,
           unit: parseSelect(rec.fields[unitFieldId]),
           rate: typeof rec.fields[rateFieldId] === 'number' ? rec.fields[rateFieldId] : 0,
-          end: parseDate(rec.fields[endFieldId]),
-          term: typeof rec.fields[termFieldId] === 'number' ? rec.fields[termFieldId] : 0,
+          start,
+          end,
+          term,
           accounts: parseSelect(rec.fields[accountsFieldId]),
         });
       }

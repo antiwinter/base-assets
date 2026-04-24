@@ -1,8 +1,9 @@
 import type { CashFlowItem } from '../types';
 import type { ICashFlowDriver } from './driver';
+import { isCashflowActiveMonth } from './scheduleUtils';
 
 /**
- * Monthly driver — returns `amount` every month until end (or forever).
+ * Monthly driver — returns `amount` every active month in `[start, end)` (see scheduleUtils).
  */
 export function createMonthlyDriver(item: CashFlowItem): ICashFlowDriver {
   const endDate = item.end ? new Date(item.end) : null;
@@ -14,7 +15,7 @@ export function createMonthlyDriver(item: CashFlowItem): ICashFlowDriver {
   return {
     item,
     getMonthBreakdown(year: number, month: number): Record<string, number> {
-      if (year > endY || (year === endY && month > endM)) return {};
+      if (!isCashflowActiveMonth(item, year, month)) return {};
       const v = item.amount;
       return v === 0 ? {} : { [emitKey]: v };
     },
@@ -33,10 +34,8 @@ export function createMonthlyDriver(item: CashFlowItem): ICashFlowDriver {
 }
 
 /**
- * Yearly driver — returns `amount` once per year in the renewal month.
- *
- * Renewal month is derived from the `end` field's month component.
- * If no end date, defaults to January.
+ * Yearly driver — returns `amount` once per year in the renewal month (from `end`'s month),
+ * only when that month lies in `[start, end)`.
  */
 export function createYearlyDriver(item: CashFlowItem): ICashFlowDriver {
   const endDate = item.end ? new Date(item.end) : null;
@@ -49,7 +48,7 @@ export function createYearlyDriver(item: CashFlowItem): ICashFlowDriver {
   return {
     item,
     getMonthBreakdown(year: number, month: number): Record<string, number> {
-      if (year > endY || (year === endY && month > endM)) return {};
+      if (!isCashflowActiveMonth(item, year, month)) return {};
       if (month !== renewalMonth) return {};
       const v = item.amount;
       return v === 0 ? {} : { [emitKey]: v };

@@ -49,8 +49,15 @@ export interface CashFlowItem {
   amount: number;
   unit: string;        // e.g. "USD", "CNY" (empty → CNY)
   rate: number;        // annual interest rate in percent (e.g. 2.87)
-  end: number | null;  // timestamp ms, null = no end
-  term: number;        // loan term in months (e.g. 360 for 30yr), 0 if N/A
+  /** First calendar month that may emit; null = no lower bound (legacy). */
+  start: number | null;
+  /**
+   * Exclusive upper bound on the calendar-month axis: first month that does not emit.
+   * Timestamp ms; null = no upper bound.
+   */
+  end: number | null;
+  /** EPI: computed months between start and end; others: optional from sheet, else 0. */
+  term: number;
   accounts: string;
 }
 

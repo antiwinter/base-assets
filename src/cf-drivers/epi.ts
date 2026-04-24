@@ -1,57 +1,52 @@
 import type { CashFlowItem } from '../types';
 import type { ICashFlowDriver } from './driver';
+import {
+  monthsBetween,
+  tsYM,
+  isCashflowActiveMonth,
+  startOfDay,
+} from './scheduleUtils';
 
 /**
  * EPI driver — Equal Principal & Interest (等额本息).
  *
  * `amount` = total principal (negative in table, we use absolute value).
  * `rate`   = annual interest rate in percent (e.g. 2.87 → 2.87%).
- * `term`   = total loan term in months (e.g. 360).
- * `end`    = loan end date (timestamp ms).
+ * `start` / `end` = first / exclusive-end calendar month (timestamps); `term` must equal
+ *   months between those months (computed at parse time, not from Base).
  *
- * Monthly payment PMT = P × r × (1+r)^n / ((1+r)^n − 1)
- * where r = annual_rate / 100 / 12, n = term.
+ * Cashflow is active only in `[start, end)` months; payment index 0..term-1 from `start`.
+ *
+ * Monthly payment PMT = P × r × (1+r)^n / ((1+r)^n − 1), r = annual_rate / 100 / 12, n = term.
  */
 
-function monthsBetween(y1: number, m1: number, y2: number, m2: number): number {
-  return (y2 - y1) * 12 + (m2 - m1);
-}
-
-function endYM(endTs: number): [number, number] {
-  const d = new Date(endTs);
-  return [d.getFullYear(), d.getMonth() + 1];
-}
-
-/**
- * Convert a (year, month=1..12, totalMonths) tuple where (year, month) is the
- * **last** payment month into the (year, month=1..12) of the **first** payment.
- *
- *   If end = 2043/12 and term = 360, the 360 monthly payments span
- *   2014/01 → 2043/12, so this returns [2014, 1].
- *
- * Encoding note: months are addressed via Y*12 + M where M ∈ [1..12]; that
- * makes (Y=2024, M=12) == 24300 and (Y=2025, M=1) == 24301, so converting
- * back uses (m-1) to keep December at the right year boundary.
- */
-function firstPaymentYM(endY: number, endM: number, totalMonths: number): [number, number] {
-  const startTotal = endY * 12 + endM - totalMonths + 1;
-  const startY = Math.floor((startTotal - 1) / 12);
-  const startM = ((startTotal - 1) % 12 + 12) % 12 + 1;
-  return [startY, startM];
+function emptyEpiDriver(item: CashFlowItem): ICashFlowDriver {
+  return {
+    item,
+    getMonthBreakdown(): Record<string, number> {
+      return {};
+    },
+    getSpentMonths(): number {
+      return 0;
+    },
+    getYearValue(): number {
+      return 0;
+    },
+  };
 }
 
 export function createEpiDriver(item: CashFlowItem): ICashFlowDriver {
   const P = Math.abs(item.amount);
   const annualRate = item.rate; // percent
   const r = annualRate / 12; // monthly rate
-  const totalMonths = item.term || 240; // fallback 20yr
+  const totalMonths = item.term;
 
-  const [endY, endM] = item.end ? endYM(item.end) : [2099, 1];
+  if (!item.start || !item.end || totalMonths <= 0) {
+    return emptyEpiDriver(item);
+  }
 
-  // `end` is the last payment month, so the first payment is `end - (term-1)`.
-  const [startY, startM] = firstPaymentYM(endY, endM, totalMonths);
+  const [startY, startM] = tsYM(item.start);
 
-  // Compute PMT
   let pmt = 0;
   if (totalMonths > 0 && r > 0) {
     const rn = Math.pow(1 + r, totalMonths);
@@ -65,6 +60,7 @@ export function createEpiDriver(item: CashFlowItem): ICashFlowDriver {
   return {
     item,
     getMonthBreakdown(year: number, month: number): Record<string, number> {
+      if (!isCashflowActiveMonth(item, year, month)) return {};
       const mIdx = monthsBetween(startY, startM, year, month);
       if (mIdx < 0 || mIdx >= totalMonths) return {};
       const v = -pmt; // outflow
@@ -87,17 +83,17 @@ export function createEpiDriver(item: CashFlowItem): ICashFlowDriver {
  * Remaining principal of an EPI loan as of `asOf` (ms timestamp).
  * Returns a positive number; the caller decides on sign (debt → negate).
  *
- * Mirrors the conventions used by `createEpiDriver` so the math stays
- * consistent across the app (notably `r = item.rate / 12`).
+ * Before `start` (local start-of-day): 0. Uses same `start` + `term` schedule as the driver.
  */
 export function epiRemainingPrincipal(item: CashFlowItem, asOf: number): number {
   const n = item.term;
-  if (!item.end || !n || n <= 0) return 0;
+  if (!item.start || !item.end || n <= 0) return 0;
+  if (startOfDay(asOf) < startOfDay(item.start)) return 0;
+
   const P = Math.abs(item.amount);
   const r = item.rate / 12;
 
-  const [endY, endM] = endYM(item.end);
-  const [startY, startM] = firstPaymentYM(endY, endM, n);
+  const [startY, startM] = tsYM(item.start);
 
   const a = new Date(asOf);
   const aY = a.getFullYear();
