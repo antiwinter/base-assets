@@ -14,6 +14,7 @@ import {
   findBottommostNegativeKey,
 } from './cashflowChartShared';
 import { CashflowTooltipCard } from './cashflowTooltipShared';
+import { getAge } from '../types';
 
 interface Props {
   items: CashFlowItem[];
@@ -106,7 +107,11 @@ export default function CashFlowChart({ items, rate, prices, year }: Props) {
 
   return (
     <div className="chart-container monthly-chart-container">
-      <h3>Monthly Cashflow — {year}</h3>
+      <h3 style={{ margin: 0 }}>
+        Monthly Cashflow — {year}{' '}
+        <span style={{ color: '#94a3b8', fontWeight: 300 }}>(age of {getAge(year)})</span>
+      </h3>
+      <br/>
       <ResponsiveContainer width="100%" height={360}>
         <ComposedChart data={data} barGap={0}>
           <XAxis dataKey="month" tick={{ fontSize: 12 }} padding={{ left: 12, right: 4 }} />

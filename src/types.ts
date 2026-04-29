@@ -84,3 +84,10 @@ export function fmtHuman(v: number, fmt?: 'east'): string {
   }
   return v.toFixed(0);
 }
+
+/** Birth year for calendar-age labels in cashflow charts. */
+export const BIRTH_YEAR = 1986;
+
+export function getAge(calendarYear: number): number {
+  return calendarYear - BIRTH_YEAR;
+}
