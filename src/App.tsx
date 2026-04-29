@@ -137,12 +137,14 @@ export default function App() {
           ))}
         </div>
       </nav>
-      <div className="app">
-        <Routes>
-          <Route path="/" element={<SnapshotPage ctx={ctx} />} />
-          <Route path="/cashflow" element={<CashflowPage ctx={ctx} />} />
-        </Routes>
-      </div>
+      <main className="main-pane">
+        <div className="app">
+          <Routes>
+            <Route path="/" element={<SnapshotPage ctx={ctx} />} />
+            <Route path="/cashflow" element={<CashflowPage ctx={ctx} />} />
+          </Routes>
+        </div>
+      </main>
     </div>
   );
 }

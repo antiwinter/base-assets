@@ -71,13 +71,20 @@ body {
 
 
 
-.app {
+/* Scrolls the full right-hand region; scrollbar sits at the viewport edge. */
+.main-pane {
   flex: 1;
   min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  height: 100vh;
+}
+
+/* Centered content column inside the scrollable pane (no overflow here). */
+.app {
   max-width: 960px;
   margin: 0 auto;
   padding: 20px 16px;
-  overflow-y: auto;
 }
 
 .placeholder {
