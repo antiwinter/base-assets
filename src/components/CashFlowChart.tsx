@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, Tooltip,
   ResponsiveContainer, ReferenceLine, LabelList, Rectangle,
@@ -13,8 +13,12 @@ import {
   findTopmostPositiveKey,
   findBottommostNegativeKey,
 } from './cashflowChartShared';
-import { CashflowTooltipCard } from './cashflowTooltipShared';
+import {
+  CashflowTooltipCard,
+  buildCashflowCategoryTooltipRows,
+} from './cashflowTooltipShared';
 import { getAge } from '../types';
+import MonthDetailDrawer from './MonthDetailDrawer';
 
 interface Props {
   items: CashFlowItem[];
@@ -47,6 +51,9 @@ const INCOME_RENDER_ORDER = ['incomeTop3', 'incomeTop2', 'incomeTop1', 'incomeOt
 const EXPENSE_RENDER_ORDER = ['expenseTop3', 'expenseTop2', 'expenseTop1', 'expenseOthers'] as const;
 
 export default function CashFlowChart({ items, rate, prices, year }: Props) {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerMonth, setDrawerMonth] = useState<MonthData | null>(null);
+
   const data = useMemo(() => {
     const drivers = buildDriversWithRates(items, rate, prices);
 
@@ -101,6 +108,23 @@ export default function CashFlowChart({ items, rate, prices, year }: Props) {
     return result;
   }, [items, rate, prices, year]);
 
+  const handleChartClick = useCallback(
+    (state: { activeLabel?: unknown; activePayload?: { payload?: MonthData }[] } | null) => {
+      let label: string | undefined;
+      if (state?.activeLabel != null) {
+        label = String(state.activeLabel);
+      } else if (state?.activePayload?.[0]?.payload?.month) {
+        label = state.activePayload[0].payload.month;
+      }
+      if (!label) return;
+      const row = data.find((d) => d.month === label);
+      if (!row) return;
+      setDrawerMonth(row);
+      setDrawerOpen(true);
+    },
+    [data],
+  );
+
   if (items.length === 0) {
     return <div className="chart-empty">No cashflow items</div>;
   }
@@ -113,7 +137,12 @@ export default function CashFlowChart({ items, rate, prices, year }: Props) {
       </h3>
       <br/>
       <ResponsiveContainer width="100%" height={360}>
-        <ComposedChart data={data} barGap={0}>
+        <ComposedChart
+          data={data}
+          barGap={0}
+          onClick={handleChartClick}
+          style={{ cursor: 'pointer' }}
+        >
           <XAxis dataKey="month" tick={{ fontSize: 12 }} padding={{ left: 12, right: 4 }} />
           <YAxis
             tick={{ fontSize: 12 }}
@@ -125,23 +154,10 @@ export default function CashFlowChart({ items, rate, prices, year }: Props) {
               if (!active || !payload?.length) return null;
               const d = payload[0]?.payload as MonthData | undefined;
               if (!d) return null;
-              const incomeDetails = d.details
-                .filter(det => det.value > 0)
-                .sort((a, b) => b.value - a.value)
-                .map(det => ({ label: `  ${det.name}`, value: det.value }));
-              const expenseDetails = d.details
-                .filter(det => det.value < 0)
-                .sort((a, b) => a.value - b.value)
-                .map(det => ({ label: `  ${det.name}`, value: det.value }));
-
-              const rows = [
-                { label: 'Cumulative', value: d.cumulative, bold: true },
-                { label: 'Income', value: d.income, bold: true },
-                ...incomeDetails,
-                { label: 'Expense', value: d.expense, bold: true },
-                ...expenseDetails,
-              ].filter(r => r.value !== 0);
-
+              const rows = buildCashflowCategoryTooltipRows({
+                details: d.details,
+                cumulative: d.cumulative,
+              });
               return <CashflowTooltipCard title={String(label)} rows={rows} />;
             }}
           />
@@ -258,6 +274,17 @@ export default function CashFlowChart({ items, rate, prices, year }: Props) {
           />
         </ComposedChart>
       </ResponsiveContainer>
+      <MonthDetailDrawer
+        open={drawerOpen}
+        onClose={() => {
+          setDrawerOpen(false);
+          setDrawerMonth(null);
+        }}
+        year={year}
+        monthLabel={drawerMonth?.month ?? ''}
+        details={drawerMonth?.details ?? []}
+        cumulative={drawerMonth?.cumulative ?? 0}
+      />
     </div>
   );
 }

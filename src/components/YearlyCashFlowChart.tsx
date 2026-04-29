@@ -13,7 +13,10 @@ import {
   findTopmostPositiveKey,
   findBottommostNegativeKey,
 } from './cashflowChartShared';
-import { CashflowTooltipCard } from './cashflowTooltipShared';
+import {
+  CashflowTooltipCard,
+  buildCashflowCategoryTooltipRows,
+} from './cashflowTooltipShared';
 import { getAge } from '../types';
 
 interface Props {
@@ -46,6 +49,8 @@ interface YearData {
   expenseTop1Name?: string;
   expenseTop2Name?: string;
   expenseTop3Name?: string;
+  /** Per line-item totals for the year (tooltip). */
+  details: { name: string; value: number }[];
 }
 
 /** Zoom limits: how many calendar years are shown at once. */
@@ -152,6 +157,11 @@ export default function YearlyCashFlowChart({ items, rate, prices, selectedYear,
       const topIncome = splitTop3(incomeItems, false);
       const topExpense = splitTop3(expenseItems, true);
 
+      const details: { name: string; value: number }[] = [
+        ...[...incomeByDriver.entries()].map(([name, value]) => ({ name, value })),
+        ...[...expenseByDriver.entries()].map(([name, value]) => ({ name, value })),
+      ].filter((d) => d.value !== 0);
+
       result.push({
         year: y,
         age: getAge(y),
@@ -159,6 +169,7 @@ export default function YearlyCashFlowChart({ items, rate, prices, selectedYear,
         expense,
         net: income + expense,
         selected: y === selectedYear,
+        details,
         incomeTop1: topIncome.top1,
         incomeTop2: topIncome.top2,
         incomeTop3: topIncome.top3,
@@ -252,18 +263,7 @@ export default function YearlyCashFlowChart({ items, rate, prices, selectedYear,
             content={({ active, payload }) => {
               if (!active || !payload?.length) return null;
               const d = payload[0].payload as YearData;
-              const rows: { label: string; value: number; bold?: boolean }[] = [
-                { label: 'Income', value: d.income, bold: true },
-                { label: `  ${d.incomeTop1Name ?? 'Top1'}`, value: d.incomeTop1 },
-                { label: `  ${d.incomeTop2Name ?? 'Top2'}`, value: d.incomeTop2 },
-                { label: `  ${d.incomeTop3Name ?? 'Top3'}`, value: d.incomeTop3 },
-                { label: '  Others', value: d.incomeOthers },
-                { label: 'Expense', value: d.expense, bold: true },
-                { label: `  ${d.expenseTop1Name ?? 'Top1'}`, value: d.expenseTop1 },
-                { label: `  ${d.expenseTop2Name ?? 'Top2'}`, value: d.expenseTop2 },
-                { label: `  ${d.expenseTop3Name ?? 'Top3'}`, value: d.expenseTop3 },
-                { label: '  Others', value: d.expenseOthers },
-              ].filter(r => r.value !== 0);
+              const rows = buildCashflowCategoryTooltipRows({ details: d.details });
               return <CashflowTooltipCard title={String(d.year)} rows={rows} />;
             }}
           />
