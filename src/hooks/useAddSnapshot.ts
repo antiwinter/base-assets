@@ -8,6 +8,7 @@ import {
 import {
   loadEditorMeta,
   buildFreshEntries,
+  compareSnapshotEntries,
   todayDayMs,
   existingKey,
   type SnapshotEntry,
@@ -86,7 +87,8 @@ export function useAddSnapshot(onSuccess?: () => void) {
 
       const date = todayDayMs();
       const entries = buildFreshEntries(accounts, detectUnit);
-      const { toInsert, toUpdate } = partition(entries, date, existingMap);
+      const { toInsert: toInsertUnsorted, toUpdate } = partition(entries, date, existingMap);
+      const toInsert = [...toInsertUnsorted].sort(compareSnapshotEntries);
 
       if (toInsert.length === 0 && toUpdate.length === 0) {
         window.alert(

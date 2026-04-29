@@ -12,6 +12,7 @@ export interface AccountInfo {
 }
 
 export interface SnapshotEntry {
+  type: string;            // bank / webfi / ex / broker / fixed (from accounts table)
   platform: string;
   account: string;         // "" for main balance, else sub-account name
   balance: number;         // default 0
@@ -148,7 +149,8 @@ export function epiLoanSnapshotAccountsForDate(
 
 /**
  * Load the metadata needed to seed a fresh snapshot:
- *  - the list of accounts (platform / type / sub-accounts) from the `accounts` table
+ *  - the list of accounts (platform / type / sub-accounts) from the `accounts` table,
+ *    excluding rows whose single-select `status` is `deprecated`
  *  - a `detectUnit` resolver based on the most recent unit per (platform, account)
  *    in the `data` table
  */
@@ -165,6 +167,7 @@ export async function loadEditorMeta(): Promise<EditorMeta> {
   const acctPlatformId = acctMap.get('platform') ?? acctMap.get('Platform') ?? '';
   const acctTypeId = acctMap.get('type') ?? acctMap.get('Type') ?? '';
   const acctSubId = acctMap.get('accounts') ?? acctMap.get('Accounts') ?? '';
+  const acctStatusId = acctMap.get('status') ?? acctMap.get('Status') ?? '';
 
   const dataDateId = dataMap.get('Date') ?? dataMap.get('date') ?? '';
   const dataPlatformId = dataMap.get('platform') ?? dataMap.get('Platform') ?? '';
@@ -181,11 +184,19 @@ export async function loadEditorMeta(): Promise<EditorMeta> {
   for (const rec of acctRecords) {
     const platform = parseSelect(rec.fields[acctPlatformId]);
     if (!platform) continue;
+    if (acctStatusId) {
+      const status = parseSelect(rec.fields[acctStatusId]);
+      if (status.toLowerCase() === 'deprecated') continue;
+    }
     const type = parseSelect(rec.fields[acctTypeId]);
     const subAccounts = acctSubId ? parseMultiSelect(rec.fields[acctSubId]) : [];
     accounts.push({ platform, type, subAccounts });
   }
-  accounts.sort((a, b) => a.platform.localeCompare(b.platform));
+  accounts.sort((a, b) => {
+    const tc = a.type.localeCompare(b.type);
+    if (tc !== 0) return tc;
+    return a.platform.localeCompare(b.platform);
+  });
 
   const latest = new Map<string, { date: number; unit: string }>();
   const existingByKey = new Map<string, ExistingEntry>();
@@ -221,6 +232,15 @@ export async function loadEditorMeta(): Promise<EditorMeta> {
   return { accounts, detectUnit, existingByKey };
 }
 
+/** Lexicographic order: type → platform → account (empty account sorts before named sub-accounts). */
+export function compareSnapshotEntries(a: SnapshotEntry, b: SnapshotEntry): number {
+  const tc = a.type.localeCompare(b.type);
+  if (tc !== 0) return tc;
+  const pc = a.platform.localeCompare(b.platform);
+  if (pc !== 0) return pc;
+  return a.account.localeCompare(b.account);
+}
+
 /** Build a fresh entry list from accounts metadata (one main row per platform + one per sub-account). */
 export function buildFreshEntries(
   accounts: AccountInfo[],
@@ -229,6 +249,7 @@ export function buildFreshEntries(
   const entries: SnapshotEntry[] = [];
   for (const a of accounts) {
     entries.push({
+      type: a.type,
       platform: a.platform,
       account: '',
       balance: 0,
@@ -236,6 +257,7 @@ export function buildFreshEntries(
     });
     for (const sub of a.subAccounts) {
       entries.push({
+        type: a.type,
         platform: a.platform,
         account: sub,
         balance: 0,
