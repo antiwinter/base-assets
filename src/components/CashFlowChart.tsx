@@ -4,9 +4,9 @@ import {
   ResponsiveContainer, ReferenceLine, LabelList, Rectangle,
 } from 'recharts';
 import { fmtCurrency, fmtNum } from '../settingStore';
-import type { CashFlowItem } from '../types';
+import type { CashFlowItem, Snapshot } from '../types';
 import {
-  buildDriversWithRates,
+  buildAllCashflowDriversWithRates,
   splitTop3,
   INCOME_COLORS,
   EXPENSE_COLORS,
@@ -22,6 +22,7 @@ import MonthDetailDrawer from './MonthDetailDrawer';
 
 interface Props {
   items: CashFlowItem[];
+  snapshots: Snapshot[];
   rate: number;   // currency conversion rate (1 for USD, cnyRate for CNY)
   prices: Map<string, number>; // symbol → USD price (e.g. CNY→0.15, USD→1)
   year: number;
@@ -50,12 +51,12 @@ interface MonthData {
 const INCOME_RENDER_ORDER = ['incomeTop3', 'incomeTop2', 'incomeTop1', 'incomeOthers'] as const;
 const EXPENSE_RENDER_ORDER = ['expenseTop3', 'expenseTop2', 'expenseTop1', 'expenseOthers'] as const;
 
-export default function CashFlowChart({ items, rate, prices, year }: Props) {
+export default function CashFlowChart({ items, snapshots, rate, prices, year }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMonth, setDrawerMonth] = useState<MonthData | null>(null);
 
   const data = useMemo(() => {
-    const drivers = buildDriversWithRates(items, rate, prices);
+    const drivers = buildAllCashflowDriversWithRates(items, snapshots, rate, prices);
 
     let cumulative = 0;
     const result: MonthData[] = [];
@@ -106,7 +107,7 @@ export default function CashFlowChart({ items, rate, prices, year }: Props) {
       });
     }
     return result;
-  }, [items, rate, prices, year]);
+  }, [items, snapshots, rate, prices, year]);
 
   const handleChartClick = useCallback(
     (state: { activeLabel?: unknown; activePayload?: { payload?: MonthData }[] } | null) => {
@@ -125,7 +126,7 @@ export default function CashFlowChart({ items, rate, prices, year }: Props) {
     [data],
   );
 
-  if (items.length === 0) {
+  if (items.length === 0 && snapshots.length === 0) {
     return <div className="chart-empty">No cashflow items</div>;
   }
 

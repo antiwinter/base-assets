@@ -1,5 +1,6 @@
-import type { CashFlowItem } from '../types';
+import type { CashFlowItem, Snapshot } from '../types';
 import { createDriver } from '../cf-drivers/driver';
+import { buildDepositInterestDriversWithRates } from '../cf-drivers/depositInterest';
 
 export const INCOME_COLORS = ['#00C853', '#00E676', '#00B0FF', '#00E5FF'];
 export const EXPENSE_COLORS = ['#D500F9', '#FF4081', '#FF6D00', '#FFD600'];
@@ -42,6 +43,18 @@ export function buildDriversWithRates(
       convRate,
     };
   });
+}
+
+export function buildAllCashflowDriversWithRates(
+  items: CashFlowItem[],
+  snapshots: Snapshot[],
+  rate: number,
+  prices: Map<string, number>,
+): DriverWithRate[] {
+  return [
+    ...buildDriversWithRates(items, rate, prices),
+    ...buildDepositInterestDriversWithRates(snapshots, rate, prices),
+  ];
 }
 
 export function splitTop3(entries: ValueEntry[], byAbs: boolean): Top3Buckets {

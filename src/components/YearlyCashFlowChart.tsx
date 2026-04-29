@@ -4,9 +4,9 @@ import {
   ResponsiveContainer, ReferenceLine, LabelList, ReferenceArea, Rectangle,
 } from 'recharts';
 import { fmtCurrency, fmtNum } from '../settingStore';
-import type { CashFlowItem } from '../types';
+import type { CashFlowItem, Snapshot } from '../types';
 import {
-  buildDriversWithRates,
+  buildAllCashflowDriversWithRates,
   splitTop3,
   INCOME_COLORS,
   EXPENSE_COLORS,
@@ -21,6 +21,7 @@ import { getAge } from '../types';
 
 interface Props {
   items: CashFlowItem[];
+  snapshots: Snapshot[];
   rate: number;
   prices: Map<string, number>;
   selectedYear: number;
@@ -83,7 +84,7 @@ const linkDisabledStyle: React.CSSProperties = {
   cursor: 'default',
 };
 
-export default function YearlyCashFlowChart({ items, rate, prices, selectedYear, onSelectYear }: Props) {
+export default function YearlyCashFlowChart({ items, snapshots, rate, prices, selectedYear, onSelectYear }: Props) {
   const [windowYears, setWindowYears] = useState(MIN_WINDOW_YEARS);
   const [windowStart, setWindowStart] = useState(() =>
     clampWindowStart(selectedYear, MIN_WINDOW_YEARS),
@@ -126,7 +127,7 @@ export default function YearlyCashFlowChart({ items, rate, prices, selectedYear,
   const windowEnd = windowStart + windowYears - 1;
 
   const data = useMemo(() => {
-    const drivers = buildDriversWithRates(items, rate, prices);
+    const drivers = buildAllCashflowDriversWithRates(items, snapshots, rate, prices);
 
     const result: YearData[] = [];
     for (let yi = 0; yi < windowYears; yi++) {
@@ -187,9 +188,9 @@ export default function YearlyCashFlowChart({ items, rate, prices, selectedYear,
       });
     }
     return result;
-  }, [items, rate, prices, windowStart, windowYears, selectedYear]);
+  }, [items, snapshots, rate, prices, windowStart, windowYears, selectedYear]);
 
-  if (items.length === 0) return null;
+  if (items.length === 0 && snapshots.length === 0) return null;
 
   const yMax = Math.max(...data.map(d => d.income)) * 1.2;
   const yMin = Math.min(...data.map(d => d.expense)) * 1.2;
