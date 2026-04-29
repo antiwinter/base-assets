@@ -60,7 +60,7 @@ export function useCashFlowData() {
       const driverFieldId = fieldMap.get('driver') ?? '';
       const amountFieldId = fieldMap.get('amount') ?? '';
       const unitFieldId = fieldMap.get('unit') ?? '';
-      const rateFieldId = fieldMap.get('rate') ?? '';
+      const aprFieldId = fieldMap.get('apr') ?? '';
       const startFieldId = fieldMap.get('start') ?? fieldMap.get('Start') ?? '';
       const endFieldId = fieldMap.get('end') ?? '';
       const termFieldId = fieldMap.get('term') ?? '';
@@ -96,7 +96,7 @@ export function useCashFlowData() {
           driver: driverRaw as CashFlowDriverType,
           amount: typeof rec.fields[amountFieldId] === 'number' ? rec.fields[amountFieldId] : 0,
           unit: parseSelect(rec.fields[unitFieldId]),
-          rate: typeof rec.fields[rateFieldId] === 'number' ? rec.fields[rateFieldId] : 0,
+          apr: typeof rec.fields[aprFieldId] === 'number' ? rec.fields[aprFieldId] : 0,
           start,
           end,
           term,

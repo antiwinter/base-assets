@@ -48,7 +48,7 @@ export interface CashFlowItem {
   driver: CashFlowDriverType;
   amount: number;
   unit: string;        // e.g. "USD", "CNY" (empty → CNY)
-  rate: number;        // annual interest rate in percent (e.g. 2.87)
+  apr: number;         // annual interest rate in percent (e.g. 2.87)
   /** First calendar month that may emit; null = no lower bound (legacy). */
   start: number | null;
   /**

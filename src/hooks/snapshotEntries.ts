@@ -59,7 +59,7 @@ export function parseEpiCashFlowItems(
 ): CashFlowItem[] {
   const driverFieldId = fieldMap.get('driver') ?? '';
   const amountFieldId = fieldMap.get('amount') ?? '';
-  const rateFieldId = fieldMap.get('rate') ?? '';
+  const aprFieldId = fieldMap.get('apr') ?? '';
   const startFieldId = fieldMap.get('start') ?? fieldMap.get('Start') ?? '';
   const endFieldId = fieldMap.get('end') ?? '';
   const accountsFieldId = fieldMap.get('accounts') ?? '';
@@ -84,14 +84,14 @@ export function parseEpiCashFlowItems(
     if (term <= 0) continue;
 
     const amount = typeof rec.fields[amountFieldId] === 'number' ? rec.fields[amountFieldId] as number : 0;
-    const rate = typeof rec.fields[rateFieldId] === 'number' ? rec.fields[rateFieldId] as number : 0;
+    const apr = typeof rec.fields[aprFieldId] === 'number' ? rec.fields[aprFieldId] as number : 0;
 
     out.push({
       item: itemFieldId ? parseSelect(rec.fields[itemFieldId]) : '',
       driver: 'EPI',
       amount,
       unit: unitFieldId ? parseSelect(rec.fields[unitFieldId]) : '',
-      rate,
+      apr,
       start,
       end,
       term,

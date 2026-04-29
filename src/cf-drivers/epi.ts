@@ -11,7 +11,7 @@ import {
  * EPI driver — Equal Principal & Interest (等额本息).
  *
  * `amount` = total principal (negative in table, we use absolute value).
- * `rate`   = annual interest rate in percent (e.g. 2.87 → 2.87%).
+ * `apr`    = annual interest rate in percent (e.g. 2.87 → 2.87%).
  * `start` / `end` = first / exclusive-end calendar month (timestamps); `term` must equal
  *   months between those months (computed at parse time, not from Base).
  *
@@ -37,7 +37,7 @@ function emptyEpiDriver(item: CashFlowItem): ICashFlowDriver {
 
 export function createEpiDriver(item: CashFlowItem): ICashFlowDriver {
   const P = Math.abs(item.amount);
-  const annualRate = item.rate; // percent
+  const annualRate = item.apr; // percent
   const r = annualRate / 12; // monthly rate
   const totalMonths = item.term;
 
@@ -91,7 +91,7 @@ export function epiRemainingPrincipal(item: CashFlowItem, asOf: number): number 
   if (startOfDay(asOf) < startOfDay(item.start)) return 0;
 
   const P = Math.abs(item.amount);
-  const r = item.rate / 12;
+  const r = item.apr / 12;
 
   const [startY, startM] = tsYM(item.start);
 
