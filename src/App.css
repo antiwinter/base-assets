@@ -323,50 +323,40 @@ body {
   white-space: nowrap;
 }
 
-/* Pill switch used next to section-title actions (e.g. "Hide fixed"). */
-.section-title-toggle {
+/* Category visibility chips next to Portfolio title */
+.section-title-chips {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 10px 4px 4px;
+  gap: 6px;
+}
+
+.section-title-chip {
+  padding: 4px 10px;
   border: 1px solid #cbd5e1;
-  background: #fff;
   border-radius: 999px;
+  background: #fff;
   cursor: pointer;
   font: inherit;
   font-size: 12px;
-  color: #64748b;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: #94a3b8;
+  text-transform: lowercase;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
-.section-title-toggle:hover {
-  background: #f1f5f9;
-  color: #334155;
+.section-title-chip:hover {
+  background: #f8fafc;
+  color: #64748b;
 }
 
-.section-title-toggle .toggle-knob {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #e2e8f0;
-  transition: background 0.15s, box-shadow 0.15s;
+.section-title-chip:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
 }
 
-.section-title-toggle.on {
-  background: #1e293b;
-  border-color: #1e293b;
-  color: #fff;
-}
-
-.section-title-toggle.on:hover {
-  background: #0f172a;
-  border-color: #0f172a;
-  color: #fff;
-}
-
-.section-title-toggle.on .toggle-knob {
-  background: #fff;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25);
+.section-title-chip.section-title-chip--on:hover {
+  filter: brightness(0.97);
 }
 
 /* Dimmed currency symbol */

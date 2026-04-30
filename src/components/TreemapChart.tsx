@@ -56,7 +56,8 @@ function buildTreeData(
   snapshot: Snapshot,
   prevSnapshot: Snapshot | undefined,
   rate: number,
-  hideFixed: boolean,
+  showFixed: boolean,
+  showDebt: boolean,
 ): CategoryNode[] {
   const catAccounts: Record<string, Map<string, number>> = {
     Fiat: new Map(),
@@ -67,7 +68,8 @@ function buildTreeData(
   };
 
   for (const a of snapshot.accounts) {
-    if (hideFixed && a.category === 'fixed') continue;
+    if (!showFixed && a.category === 'fixed') continue;
+    if (!showDebt && a.category === 'debt') continue;
     const val = Math.abs(a.valueUsd * rate);
     const cat = CATEGORY_LABEL[a.category] ?? 'Fiat';
     const existing = catAccounts[cat].get(a.platform) ?? 0;
@@ -84,7 +86,8 @@ function buildTreeData(
 
   const result: CategoryNode[] = [];
   for (const cat of CAT_ORDER) {
-    if (hideFixed && cat === 'Fixed') continue;
+    if (!showFixed && cat === 'Fixed') continue;
+    if (!showDebt && cat === 'Debt') continue;
     const platforms = catAccounts[cat];
     const total = catTotals[cat];
     if (Math.abs(total.cur) < 0.01 && platforms.size === 0) continue;
@@ -270,11 +273,12 @@ function fmtDate(ts: number): string {
 export default function TreemapChart({ snapshot, prevSnapshot, rate, date, netWorth, prevNetWorth }: Props) {
   const [zoomedCat, setZoomedCat] = useState<string | null>(null);
   const catLabelsRef = useRef<Map<string, CatLabelInfo>>(new Map());
-  const hideFixed = useSettingStore((s) => s.hideFixed);
+  const showFixed = useSettingStore((s) => s.showFixed);
+  const showDebt = useSettingStore((s) => s.showDebt);
 
   if (!snapshot) return null;
 
-  const data = buildTreeData(snapshot, prevSnapshot, rate, hideFixed);
+  const data = buildTreeData(snapshot, prevSnapshot, rate, showFixed, showDebt);
   if (data.length === 0) return <div className="chart-empty">No assets</div>;
 
   // When zoomed, show only that category's children as top-level data

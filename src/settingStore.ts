@@ -8,12 +8,16 @@ interface SettingState {
   displayCurrency: DisplayCurrency;
   currentYear: number;
   lastPath: string;
-  hideFixed: boolean;
+  /** When false, fixed assets are omitted from portfolio treemap, trend stack, net worth, and table. */
+  showFixed: boolean;
+  /** When false, debt is omitted from the portfolio treemap only (trend debt line unchanged). */
+  showDebt: boolean;
 
   setDisplayCurrency: (currency: DisplayCurrency) => void;
   setCurrentYear: (year: number) => void;
   setLastPath: (path: string) => void;
-  setHideFixed: (hide: boolean) => void;
+  setShowFixed: (show: boolean) => void;
+  setShowDebt: (show: boolean) => void;
 }
 
 export const useSettingStore = create<SettingState>()(
@@ -22,12 +26,14 @@ export const useSettingStore = create<SettingState>()(
       displayCurrency: "CNY",
       currentYear: new Date().getFullYear(),
       lastPath: "/",
-      hideFixed: false,
+      showFixed: true,
+      showDebt: true,
 
       setDisplayCurrency: (currency) => set({ displayCurrency: currency }),
       setCurrentYear: (year) => set({ currentYear: year }),
       setLastPath: (path) => set({ lastPath: path }),
-      setHideFixed: (hide) => set({ hideFixed: hide }),
+      setShowFixed: (show) => set({ showFixed: show }),
+      setShowDebt: (show) => set({ showDebt: show }),
     }),
     {
       name: "base-assets-settings",
@@ -35,7 +41,8 @@ export const useSettingStore = create<SettingState>()(
         displayCurrency: state.displayCurrency,
         currentYear: state.currentYear,
         lastPath: state.lastPath,
-        hideFixed: state.hideFixed,
+        showFixed: state.showFixed,
+        showDebt: state.showDebt,
       }),
     },
   ),

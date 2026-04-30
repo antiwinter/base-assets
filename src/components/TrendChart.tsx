@@ -50,7 +50,7 @@ const linkDisabledStyle: React.CSSProperties = {
 };
 
 export default function TrendChart({ snapshots, rate, selectedIndex, onSelectIndex }: Props) {
-  const hideFixed = useSettingStore((s) => s.hideFixed);
+  const showFixed = useSettingStore((s) => s.showFixed);
   if (snapshots.length === 0) return null;
 
   const data = snapshots.map((s) => ({
@@ -58,7 +58,7 @@ export default function TrendChart({ snapshots, rate, selectedIndex, onSelectInd
     fiat: Math.round(s.fiatUsd * rate),
     digital: Math.round(s.digitalUsd * rate),
     stock: Math.round(s.stockUsd * rate),
-    fixed: hideFixed ? 0 : Math.round(s.fixedUsd * rate),
+    fixed: showFixed ? Math.round(s.fixedUsd * rate) : 0,
     debt: Math.round(Math.abs(s.debtUsd) * rate),
   }));
 
@@ -132,7 +132,7 @@ export default function TrendChart({ snapshots, rate, selectedIndex, onSelectInd
             }}
           />
           <Legend />
-          {!hideFixed && (
+          {showFixed && (
             <Area
               type="monotone"
               dataKey="fixed"

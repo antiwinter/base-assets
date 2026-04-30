@@ -74,11 +74,11 @@ function DebtCell({ value, prev }: { value: number; prev?: number }) {
 }
 
 export default function DetailTable({ snapshots, rate, selectedIndex, onSelectIndex }: Props) {
-  const hideFixed = useSettingStore((s) => s.hideFixed);
+  const showFixed = useSettingStore((s) => s.showFixed);
   if (snapshots.length === 0) return null;
 
   const rows = [...snapshots].reverse();
-  const totalOf = (s: Snapshot) => hideFixed ? s.totalUsd - s.fixedUsd : s.totalUsd;
+  const totalOf = (s: Snapshot) => (showFixed ? s.totalUsd : s.totalUsd - s.fixedUsd);
 
   return (
     <div className="detail-table-container">
@@ -91,7 +91,7 @@ export default function DetailTable({ snapshots, rate, selectedIndex, onSelectIn
             <th>Fiat</th>
             <th>Digital</th>
             <th>Stock</th>
-            {!hideFixed && <th>Fixed</th>}
+            {showFixed && <th>Fixed</th>}
             <th>Debt</th>
           </tr>
         </thead>
@@ -125,7 +125,7 @@ export default function DetailTable({ snapshots, rate, selectedIndex, onSelectIn
                 <ValCell value={s.fiatUsd * rate} prev={prev ? prev.fiatUsd * rate : undefined} />
                 <ValCell value={s.digitalUsd * rate} prev={prev ? prev.digitalUsd * rate : undefined} />
                 <ValCell value={s.stockUsd * rate} prev={prev ? prev.stockUsd * rate : undefined} />
-                {!hideFixed && (
+                {showFixed && (
                   <ValCell value={s.fixedUsd * rate} prev={prev ? prev.fixedUsd * rate : undefined} />
                 )}
                 <DebtCell value={s.debtUsd * rate} prev={prev ? prev.debtUsd * rate : undefined} />
