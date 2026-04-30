@@ -3,6 +3,7 @@ import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
 import { CAT_COLORS } from '../types';
 import type { Snapshot } from '../types';
 import { fmtCurrency, useSettingStore } from '../settingStore';
+import { buildZoomedAccountLeaves } from './treemapHeatmap';
 interface Props {
   snapshot: Snapshot | undefined;
   prevSnapshot: Snapshot | undefined;
@@ -119,6 +120,12 @@ function CustomContent(props: any) {
     const showName = width > 30 && height > 16;
     const showValue = width > 50 && height > 30;
     const size = props.value ?? 0;
+    const labelFill =
+      typeof props.labelFill === 'string'
+        ? props.labelFill
+        : typeof props?.payload?.labelFill === 'string'
+          ? props.payload.labelFill
+          : '#fff';
 
     return (
       <g>
@@ -130,12 +137,12 @@ function CustomContent(props: any) {
           style={{ fill: color, stroke: '#fff', strokeWidth: 2 }}
         />
         {showName && (
-          <text x={x + 8} y={y + 20} fontSize={14} fontWeight={500} fill="#fff">
+          <text x={x + 8} y={y + 20} fontSize={14} fontWeight={500} fill={labelFill}>
             {name}
           </text>
         )}
         {showValue && (
-          <text x={x + 8} y={y + 36} fontSize={12} fill="#fff">
+          <text x={x + 8} y={y + 36} fontSize={12} fill={labelFill}>
             {fmtCurrency({ v: size })}
           </text>
         )}
@@ -235,7 +242,7 @@ function CustomContent(props: any) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function CustomTooltip({ active, payload, sym }: any) {
+function CustomTooltip({ active, payload, zoomed }: { active?: boolean; payload?: any[]; zoomed: boolean }) {
   if (!active || !payload?.[0]) return null;
   const d = payload[0]?.payload;
   if (!d) return null;
@@ -243,6 +250,7 @@ function CustomTooltip({ active, payload, sym }: any) {
   const cat = d.category ?? '';
   const color = d.color ?? '#94a3b8';
   const size = d.size ?? d.value ?? 0;
+  const apyHeat = d.apyHeat;
   return (
     <div style={{
       background: '#fff',
@@ -256,6 +264,11 @@ function CustomTooltip({ active, payload, sym }: any) {
       {' / '}
       <strong>{name}</strong>
       {': '}{fmtCurrency({ v: size })}
+      {zoomed && typeof apyHeat === 'number' && (
+        <div style={{ marginTop: 4, fontSize: 12, color: '#64748b' }}>
+          APR: {apyHeat.toFixed(2)}%
+        </div>
+      )}
     </div>
   );
 }
@@ -270,12 +283,13 @@ export default function TreemapChart({ snapshot, prevSnapshot, rate }: Props) {
   const data = buildTreeData(snapshot, prevSnapshot, rate, showFixed, showDebt);
   if (data.length === 0) return <div className="chart-empty">No assets</div>;
 
-  // When zoomed, show only that category's children as top-level data
   const zoomed = zoomedCat !== null;
   const catNode = zoomed ? data.find((d) => d.name === zoomedCat) : null;
-  const displayData = catNode
-    ? catNode.children.map((c) => ({ ...c, color: catNode.color }))
-    : data;
+  const zoomedLeaves =
+    zoomed && zoomedCat
+      ? buildZoomedAccountLeaves(snapshot, zoomedCat, rate, showFixed, showDebt)
+      : null;
+  const displayData = zoomedLeaves !== null ? zoomedLeaves : data;
 
   // Clear label positions before each render
   catLabelsRef.current.clear();
@@ -285,8 +299,8 @@ export default function TreemapChart({ snapshot, prevSnapshot, rate }: Props) {
   };
 
   const zoomedCategoryTotal =
-    catNode != null
-      ? catNode.children.reduce((sum, c) => sum + c.size, 0)
+    zoomedLeaves !== null
+      ? zoomedLeaves.reduce((sum, l) => sum + l.size, 0)
       : undefined;
 
   return (
@@ -310,17 +324,21 @@ export default function TreemapChart({ snapshot, prevSnapshot, rate }: Props) {
           </a>
         </div>
       )}
-      <ResponsiveContainer width="100%" height={320}>
-        <Treemap
-          data={displayData}
-          dataKey="size"
-          aspectRatio={4 / 3}
-          isAnimationActive={false}
-          content={<CustomContent zoomed={zoomed} onCategoryClick={handleCategoryClick} catLabelsRef={catLabelsRef} />}
-        >
-          <Tooltip content={<CustomTooltip />} />
-        </Treemap>
-      </ResponsiveContainer>
+      {zoomedLeaves !== null && zoomedLeaves.length === 0 ? (
+        <div className="chart-empty">No accounts in this category</div>
+      ) : (
+        <ResponsiveContainer width="100%" height={320}>
+          <Treemap
+            data={displayData}
+            dataKey="size"
+            aspectRatio={4 / 3}
+            isAnimationActive={false}
+            content={<CustomContent zoomed={zoomed} onCategoryClick={handleCategoryClick} catLabelsRef={catLabelsRef} />}
+          >
+            <Tooltip content={<CustomTooltip zoomed={zoomed} />} />
+          </Treemap>
+        </ResponsiveContainer>
+      )}
     </div>
   );
 }

@@ -61,7 +61,7 @@ function buildSnapshots(
   const snapshots: Snapshot[] = [];
   for (const [date, records] of grouped) {
     const fromData = records.map((r) => snapshotAccountFromDataRecord(r, priceMap, platformTypeMap));
-    const fromEpi = epiLoanSnapshotAccountsForDate(epiItems, date, priceMap, platformTypeMap);
+    const fromEpi = epiLoanSnapshotAccountsForDate(epiItems, date, priceMap);
     const accounts = [...fromData, ...fromEpi];
     const totals = sumSnapshotTotals(accounts);
     snapshots.push({ date, accounts, ...totals });

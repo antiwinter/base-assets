@@ -1,7 +1,7 @@
 # Todos
 - [x] remember tabs & settings in local storage
 - [ ] treemap for cashflow of current month (maybe in drawer?)
-- [ ] enhance snapshot lvl2 treemap: grind to account; different colors for w//w/o interest, $BTC/$ETH/$U interest/$U/others, debt with different APR; net worth of current cat;
+- [x] enhance snapshot lvl2 treemap: grind to account; different colors for w//w/o interest, $BTC/$ETH/$U interest/$U/others, debt with different APR; net worth of current cat;
 
 ## Snapshot account categories
 

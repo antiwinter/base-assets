@@ -1,9 +1,13 @@
+/** Category treemap colors; `$BTC` / `$ETH` / `$USDT` are soft L2 bases (0% APY), heat ramps saturation from these. */
 export const CAT_COLORS: Record<string, string> = {
   Fiat: '#8dc77b',
   Stock: '#9698e5',
   Digital: '#f8c12d',
   Fixed: '#000000',
   Debt: '#ff6262',
+  $BTC: '#6385dd',
+  $ETH: '#a475cd',
+  $USDT: '#86efac',
 };
 
 export interface DataRecord {
@@ -28,6 +32,8 @@ export interface SnapshotAccount {
   unit: string;
   valueUsd: number;
   category: AssetCategory;
+  /** Annual APR % when known (e.g. EPI rows from CFI); deposit earn rows use name suffix + treemap parse instead. */
+  aprPercent?: number;
 }
 
 export interface Snapshot {

@@ -1,9 +1,10 @@
 import type { Snapshot, SnapshotAccount } from '../types';
 
 const YEAR_MS = 365 * 86400_000;
-const APY_SUFFIX_RE = /(\d+(?:\.\d+)?)$/;
+/** Letter then trailing percent (e.g. earn1.35 → 1.35); avoids `loan (2)` etc. */
+const APY_SUFFIX_RE = /[a-zA-Z](\d+(?:\.\d+)?)$/;
 
-/** Trailing numeric token = APY percent (e.g. earn1.35 → 1.35, flex2.5 → 2.5). */
+/** Suffix APY on account name (e.g. earn1.35 → 1.35, flex2.5 → 2.5). */
 export function parseSuffixApyPercent(account: string): number | null {
   const t = account.trim();
   const m = t.match(APY_SUFFIX_RE);

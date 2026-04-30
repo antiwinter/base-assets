@@ -2,7 +2,6 @@ import { bitable } from '@lark-base-open/js-sdk';
 import { fetchAllRecords, parseSelect, parseMultiSelect, parseDate } from './larkUtils';
 import { epiRemainingPrincipal } from '../cf-drivers/epi';
 import { epiTermMonthsFromStartEnd } from '../cf-drivers/scheduleUtils';
-import { categorizeAccount } from './portfolioUtils';
 import type { CashFlowItem, SnapshotAccount } from '../types';
 
 export interface AccountInfo {
@@ -102,47 +101,43 @@ export function parseEpiCashFlowItems(
   return out;
 }
 
-/** Sum remaining EPI principal per platform (positive amounts). */
-export function aggregateEpiLoanByPlatform(
-  items: CashFlowItem[],
-  asOfMs: number,
-): Map<string, { principal: number; unit: string }> {
-  const map = new Map<string, { principal: number; unit: string }>();
-  for (const item of items) {
-    const remaining = epiRemainingPrincipal(item, asOfMs);
-    if (remaining <= 0) continue;
-    const platform = item.accounts.trim();
-    if (!platform) continue;
-    const unit = (item.unit.trim() || 'CNY');
-    const cur = map.get(platform);
-    if (cur) {
-      map.set(platform, {
-        principal: cur.principal + remaining,
-        unit: cur.unit || unit,
-      });
-    } else {
-      map.set(platform, { principal: remaining, unit });
-    }
-  }
-  return map;
-}
-
-/** Synthetic `loan` snapshot rows from EPI remaining principal at `dateMs`. */
+/** One synthetic debt row per EPI line with remaining principal at `dateMs` (APR from CFI for treemap heat). */
 export function epiLoanSnapshotAccountsForDate(
   epiItems: CashFlowItem[],
   dateMs: number,
   priceMap: Map<string, number>,
-  platformTypeMap: Map<string, string>,
 ): SnapshotAccount[] {
-  const agg = aggregateEpiLoanByPlatform(epiItems, dateMs);
   const accounts: SnapshotAccount[] = [];
-  for (const [platform, { principal, unit }] of agg) {
-    const balance = -principal;
+  const unnamedCountByPlatform = new Map<string, number>();
+  for (const item of epiItems) {
+    const remaining = epiRemainingPrincipal(item, dateMs);
+    if (remaining <= 0) continue;
+    const platform = item.accounts.trim();
+    if (!platform) continue;
+    const unit = item.unit.trim() || 'CNY';
+    const balance = -remaining;
     const price = priceMap.get(unit) ?? 0;
     const valueUsd = balance * price;
-    const platformType = platformTypeMap.get(platform) ?? '';
-    const category = categorizeAccount('loan', unit, platformType);
-    accounts.push({ platform, account: 'loan', balance, unit, valueUsd, category });
+    const itemName = item.item.trim();
+    let account: string;
+    if (itemName) {
+      account = itemName;
+    } else {
+      const n = (unnamedCountByPlatform.get(platform) ?? 0) + 1;
+      unnamedCountByPlatform.set(platform, n);
+      account = n === 1 ? 'loan' : `loan (${n})`;
+    }
+    const aprPercent =
+      typeof item.apr === 'number' && Number.isFinite(item.apr) ? item.apr : 0;
+    accounts.push({
+      platform,
+      account,
+      balance,
+      unit,
+      valueUsd,
+      category: 'debt',
+      aprPercent,
+    });
   }
   return accounts;
 }
