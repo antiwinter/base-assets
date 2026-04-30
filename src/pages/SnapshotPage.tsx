@@ -3,9 +3,17 @@ import TreemapChart from '../components/TreemapChart';
 import TrendChart from '../components/TrendChart';
 import DetailTable from '../components/DetailTable';
 import { useAddSnapshot } from '../hooks/useAddSnapshot';
-import { useSettingStore } from '../settingStore';
+import { fmtNum, getDisplaySymbol, useSettingStore } from '../settingStore';
 import { CAT_COLORS } from '../types';
 import type { AppPageContext } from '../App';
+
+function fmtPortfolioDate(ts: number): string {
+  const d = new Date(ts);
+  const yy = String(d.getFullYear()).slice(2);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yy}/${mm}/${dd}`;
+}
 
 export default function SnapshotPage({ ctx }: { ctx: AppPageContext }) {
   const { snapshots, rate, reloadPortfolio } = ctx;
@@ -25,10 +33,62 @@ export default function SnapshotPage({ ctx }: { ctx: AppPageContext }) {
   const effectiveTotal = (s: typeof selected) =>
     s ? (showFixed ? s.totalUsd : s.totalUsd - s.fixedUsd) : undefined;
 
+  const portfolioNetWorth =
+    selected !== undefined
+      ? (() => {
+          const v = effectiveTotal(selected);
+          return v !== undefined ? v * rate : undefined;
+        })()
+      : undefined;
+  const portfolioPrevNetWorth =
+    prevSelected !== undefined
+      ? (() => {
+          const v = effectiveTotal(prevSelected);
+          return v !== undefined ? v * rate : undefined;
+        })()
+      : undefined;
+  const portfolioChangeStr =
+    portfolioNetWorth !== undefined &&
+    portfolioPrevNetWorth !== undefined &&
+    portfolioPrevNetWorth !== 0
+      ? (() => {
+          const pct =
+            ((portfolioNetWorth - portfolioPrevNetWorth) /
+              Math.abs(portfolioPrevNetWorth)) *
+            100;
+          const arrow = pct >= 0 ? '↑' : '↓';
+          return `${arrow}${Math.abs(pct).toFixed(1)}%`;
+        })()
+      : null;
+
   return (
     <>
       <div className="section-title-row">
-        <h2 className="section-title">Portfolio</h2>
+        <div className="section-title-portfolio-group">
+          <h2 className="section-title">Portfolio</h2>
+          {portfolioNetWorth !== undefined && (
+            <>
+              <span className="portfolio-heading-worth">
+                <span className="sym-dim">{getDisplaySymbol()}</span>
+                {fmtNum(portfolioNetWorth)}
+              </span>
+              {portfolioChangeStr && (
+                <span
+                  className={`portfolio-heading-change ${
+                    portfolioChangeStr.startsWith('↑') ? 'change-up' : 'change-down'
+                  }`}
+                >
+                  {portfolioChangeStr}
+                </span>
+              )}
+              {selected?.date !== undefined && (
+                <span className="portfolio-heading-date">
+                  {fmtPortfolioDate(selected.date)}
+                </span>
+              )}
+            </>
+          )}
+        </div>
         <div className="section-title-row-right">
           {addError && <span className="section-title-error" title={addError}>⚠ {addError}</span>}
           <div className="section-title-chips" role="group" aria-label="Portfolio category visibility">
@@ -83,14 +143,7 @@ export default function SnapshotPage({ ctx }: { ctx: AppPageContext }) {
           </button>
         </div>
       </div>
-      <TreemapChart
-        snapshot={selected}
-        prevSnapshot={prevSelected}
-        rate={rate}
-        date={selected?.date}
-        netWorth={(() => { const v = effectiveTotal(selected); return v !== undefined ? v * rate : undefined; })()}
-        prevNetWorth={(() => { const v = effectiveTotal(prevSelected); return v !== undefined ? v * rate : undefined; })()}
-      />
+      <TreemapChart snapshot={selected} prevSnapshot={prevSelected} rate={rate} />
       <h2 className="section-title">Trend</h2>
       <TrendChart
         snapshots={snapshots}

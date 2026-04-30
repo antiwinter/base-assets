@@ -2,14 +2,11 @@ import { useRef, useState } from 'react';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
 import { CAT_COLORS } from '../types';
 import type { Snapshot } from '../types';
-import { fmtCurrency, fmtNum, getDisplaySymbol, useSettingStore } from '../settingStore';
+import { fmtCurrency, useSettingStore } from '../settingStore';
 interface Props {
   snapshot: Snapshot | undefined;
   prevSnapshot: Snapshot | undefined;
   rate: number;
-  date?: number;
-  netWorth?: number;
-  prevNetWorth?: number;
 }
 
 interface CatLabelInfo {
@@ -262,15 +259,7 @@ function CustomTooltip({ active, payload, sym }: any) {
     </div>
   );
 }
-function fmtDate(ts: number): string {
-  const d = new Date(ts);
-  const yy = String(d.getFullYear()).slice(2);
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yy}/${mm}/${dd}`;
-}
-
-export default function TreemapChart({ snapshot, prevSnapshot, rate, date, netWorth, prevNetWorth }: Props) {
+export default function TreemapChart({ snapshot, prevSnapshot, rate }: Props) {
   const [zoomedCat, setZoomedCat] = useState<string | null>(null);
   const catLabelsRef = useRef<Map<string, CatLabelInfo>>(new Map());
   const showFixed = useSettingStore((s) => s.showFixed);
@@ -295,43 +284,19 @@ export default function TreemapChart({ snapshot, prevSnapshot, rate, date, netWo
     if (!zoomed) setZoomedCat(catName);
   };
 
-  // Net worth header
-  const nwStr = netWorth !== undefined ? fmtCurrency({ v: netWorth }) : '';
-  const changeStr = (netWorth !== undefined && prevNetWorth !== undefined && prevNetWorth !== 0)
-    ? (() => {
-        const pct = ((netWorth - prevNetWorth) / Math.abs(prevNetWorth)) * 100;
-        const arrow = pct >= 0 ? '↑' : '↓';
-        return `${arrow}${Math.abs(pct).toFixed(1)}%`;
-      })()
-    : null;
-  const dateStr = date ? fmtDate(date) : '';
-
   return (
     <div className="chart-container treemap-container">
-      <div style={{ display: 'flex', alignItems: 'baseline', marginBottom: 10 }}>
-        <span style={{ fontSize: 15, color: '#1e293b' }}>{dateStr}</span>
-        <span style={{ fontSize: 15, color: '#94a3b8', marginLeft: 6 }}>
-          <span style={{ opacity: 0.4 }}>{getDisplaySymbol()}</span>{netWorth !== undefined ? fmtNum(netWorth) : '--'}
-        </span>
-        {changeStr && (
-          <span
-            className={changeStr.startsWith('↑') ? 'change-up' : 'change-down'}
-            style={{ fontSize: 13, marginLeft: 6, fontWeight: 500 }}
-          >
-            {changeStr}
-          </span>
-        )}
-        <span style={{ flex: 1 }} />
-        {zoomed && (
+      {zoomed && (
+        <div className="treemap-zoom-bar">
           <a
             href="#"
             onClick={(e) => { e.preventDefault(); setZoomedCat(null); }}
-            style={{ fontSize: 13, color: '#64748b', textDecoration: 'none', cursor: 'pointer' }}
+            className="treemap-zoom-back"
           >
             ← back
           </a>
-        )}
-      </div>
+        </div>
+      )}
       <ResponsiveContainer width="100%" height={320}>
         <Treemap
           data={displayData}

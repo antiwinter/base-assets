@@ -173,6 +173,24 @@ body {
   margin-bottom: 20px;
 }
 
+.treemap-zoom-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.treemap-zoom-back {
+  font-size: 13px;
+  color: #64748b;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.treemap-zoom-back:hover {
+  color: #334155;
+  text-decoration: underline;
+}
+
 /* Charts */
 .chart-container {
   background: #fff;
@@ -267,7 +285,7 @@ body {
 /* Section Titles */
 .section-title {
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 100;
   color: #1e293b;
   margin-bottom: 12px;
 }
@@ -282,6 +300,34 @@ body {
 
 .section-title-row .section-title {
   margin-bottom: 0;
+}
+
+.section-title-portfolio-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.portfolio-heading-worth {
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.portfolio-heading-change {
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.portfolio-heading-date {
+  font-size: 14px;
+  font-weight: 400;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
 }
 
 .section-title-row-right {
