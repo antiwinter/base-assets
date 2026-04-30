@@ -175,12 +175,37 @@ body {
 
 .treemap-zoom-bar {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 10px;
+  min-height: 22px;
+}
+
+.treemap-zoom-bar-meta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.treemap-zoom-category-name {
+  font-size: 14px;
+  font-weight: 400;
+  color: #64748b;
+}
+
+.treemap-zoom-category-worth {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+  font-variant-numeric: tabular-nums;
 }
 
 .treemap-zoom-back {
+  flex-shrink: 0;
+  margin-left: auto;
   font-size: 13px;
+  font-weight: 500;
   color: #64748b;
   text-decoration: none;
   cursor: pointer;

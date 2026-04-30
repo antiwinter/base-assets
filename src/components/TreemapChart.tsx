@@ -284,10 +284,23 @@ export default function TreemapChart({ snapshot, prevSnapshot, rate }: Props) {
     if (!zoomed) setZoomedCat(catName);
   };
 
+  const zoomedCategoryTotal =
+    catNode != null
+      ? catNode.children.reduce((sum, c) => sum + c.size, 0)
+      : undefined;
+
   return (
     <div className="chart-container treemap-container">
       {zoomed && (
         <div className="treemap-zoom-bar">
+          {catNode != null && zoomedCategoryTotal !== undefined && (
+            <div className="treemap-zoom-bar-meta">
+              <span className="treemap-zoom-category-name">{catNode.name}</span>
+              <span className="treemap-zoom-category-worth">
+                {fmtCurrency({ v: zoomedCategoryTotal })}
+              </span>
+            </div>
+          )}
           <a
             href="#"
             onClick={(e) => { e.preventDefault(); setZoomedCat(null); }}
