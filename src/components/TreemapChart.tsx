@@ -303,8 +303,16 @@ export default function TreemapChart({ snapshot, prevSnapshot, rate }: Props) {
       ? zoomedLeaves.reduce((sum, l) => sum + l.size, 0)
       : undefined;
 
+  const handleZoomedContextMenu = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setZoomedCat(null);
+  };
+
   return (
-    <div className="chart-container treemap-container">
+    <div
+      className="chart-container treemap-container"
+      onContextMenu={zoomed ? handleZoomedContextMenu : undefined}
+    >
       {zoomed && (
         <div className="treemap-zoom-bar">
           {catNode != null && zoomedCategoryTotal !== undefined && (
